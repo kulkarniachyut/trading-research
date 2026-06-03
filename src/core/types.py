@@ -1,0 +1,174 @@
+"""Shared data contracts — the backbone every component speaks.
+
+Defined here so that `data`, `indicators`, `strategies`, `backtest`, `risk`, `validation`,
+`reporting`, and `execution` all depend on these contracts rather than each other's internals.
+
+OHLCV convention (not a class): a pandas DataFrame with a tz-aware DatetimeIndex in
+America/New_York and columns ``open, high, low, close, volume`` — monotonic, de-duped,
+RTH-filtered. Functions that produce/consume bars document this expectation.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Literal, Optional
+
+Side = Literal["long", "short", "flat"]
+OrderType = Literal["market", "limit"]
+OrderStatus = Literal["new", "submitted", "filled", "cancelled", "rejected"]
+
+
+class TimeFrame(Enum):
+    """Supported bar timeframes, ordered low → high."""
+
+    M1 = "1m"
+    M5 = "5m"
+    M15 = "15m"
+    H1 = "1h"
+    D1 = "1d"
+
+    @property
+    def minutes(self) -> int:
+        return {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "1d": 390}[self.value]
+
+    @property
+    def pandas_freq(self) -> str:
+        """Resampling alias for pandas (e.g. ``5min``, ``1h``, ``1D``)."""
+        return {"1m": "1min", "5m": "5min", "15m": "15min", "1h": "1h", "1d": "1D"}[self.value]
+
+    def __lt__(self, other: "TimeFrame") -> bool:
+        return self.minutes < other.minutes
+
+
+@dataclass(slots=True)
+class Signal:
+    """What a strategy emits from ``on_bar``. At most one per bar."""
+
+    timestamp: datetime
+    symbol: str
+    side: Side
+    size_hint: Optional[float] = None
+    stop: Optional[float] = None
+    target: Optional[float] = None
+    reason: str = ""
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class Trade:
+    """A completed round-trip, produced by the backtest engine."""
+
+    symbol: str
+    side: Side
+    entry_ts: datetime
+    exit_ts: datetime
+    entry_px: float
+    exit_px: float
+    qty: float
+    gross_pnl: float
+    costs: float
+    net_pnl: float
+    return_pct: float
+    bars_held: int
+    reason_in: str = ""
+    reason_out: str = ""
+
+
+@dataclass(slots=True)
+class Order:
+    """An intended order, handed to a Broker (execution side)."""
+
+    symbol: str
+    side: Side
+    qty: float
+    type: OrderType = "market"
+    limit_price: Optional[float] = None
+    stop: Optional[float] = None
+    target: Optional[float] = None
+    status: OrderStatus = "new"
+    id: Optional[str] = None
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class Position:
+    symbol: str
+    qty: float
+    avg_px: float
+    market_value: float = 0.0
+    unrealized_pnl: float = 0.0
+
+    @property
+    def side(self) -> Side:
+        if self.qty > 0:
+            return "long"
+        if self.qty < 0:
+            return "short"
+        return "flat"
+
+
+@dataclass(slots=True)
+class Account:
+    cash: float
+    equity: float
+    buying_power: float
+
+
+@dataclass(slots=True)
+class Result:
+    """The unit everything downstream (validation, reporting) consumes."""
+
+    strategy: str
+    symbol: str
+    params: dict[str, Any]
+    trades: list[Trade]
+    equity_curve: Any  # pandas Series; kept as Any to avoid a hard import here
+    metrics: dict[str, float] = field(default_factory=dict)
+    is_oos: bool = False
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+
+
+class MarketContext(ABC):
+    """The per-bar view handed to a strategy's ``on_bar``.
+
+    Exposes ONLY completed bars as of ``now`` — the forming bar and any future bar are
+    physically absent, so look-ahead is impossible by construction (not by discipline).
+    Concrete implementations live in the backtest engine and the live paper loop, but a
+    strategy only ever depends on this interface.
+    """
+
+    @property
+    @abstractmethod
+    def now(self) -> datetime:
+        """Timestamp of the just-closed low-timeframe bar."""
+
+    @abstractmethod
+    def bars(self, timeframe: TimeFrame):
+        """All completed bars (OHLCV DataFrame) at or before ``now`` for ``timeframe``."""
+
+    @abstractmethod
+    def last(self, timeframe: TimeFrame):
+        """The most recent completed bar (pandas Series) for ``timeframe``."""
+
+    @abstractmethod
+    def window(self, timeframe: TimeFrame, n: int):
+        """The last ``n`` completed bars for ``timeframe``."""
+
+    @property
+    @abstractmethod
+    def price(self) -> float:
+        """Latest known price (close of the just-closed low-timeframe bar)."""
+
+    @property
+    @abstractmethod
+    def position(self) -> Position:
+        """Current position in the traded symbol (qty 0 ⇒ flat)."""
+
+    @property
+    @abstractmethod
+    def account(self) -> Account:
+        """Current account snapshot (cash/equity/buying power)."""

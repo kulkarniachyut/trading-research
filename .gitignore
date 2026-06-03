@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Data & results (regenerable / large / sensitive)
+data/cache/
+*.parquet
+*.sqlite
+*.db
+
+# Secrets — never commit API keys
+.env
+config/secrets.yaml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Notebooks
+.ipynb_checkpoints/
