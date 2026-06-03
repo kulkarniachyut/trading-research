@@ -48,7 +48,7 @@ from `src/indicators/classic.py`, never from a TA lib directly.
 
 ## Build status (one step at a time, review gate after each)
 - [x] Step 0 — Environment & scaffold (core contracts, BaseStrategy + registry, DataProvider)
-- [ ] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
+- [x] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
 - [ ] Step 2 — Vertical slice (smc/classic indicators, ICT strategy, engine+costs, metrics)
 - [ ] Step 3 — Validation (walk-forward, Monte Carlo, overfit/cost guards)
 - [ ] Step 4 — More strategies (momentum, mean-reversion)
