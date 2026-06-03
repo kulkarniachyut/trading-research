@@ -6,8 +6,8 @@
 - calendar: holidays have no session; early-close half-days truncate RTH
 - the Alpaca provider fails loudly when keys are absent
 
-All offline/deterministic via a synthetic ``MockProvider``. The one live yfinance pull is marked
-``network`` and skipped by default.
+All offline/deterministic via a synthetic ``MockProvider``. The one live pull (Alpaca IEX) is
+marked ``network`` — skipped by default, and skipped if Alpaca keys aren't configured.
 """
 
 from __future__ import annotations
@@ -184,16 +184,20 @@ def test_alpaca_missing_keys_raises(monkeypatch, tmp_path):
 
 
 # --------------------------------------------------------------------------
-# live yfinance pull (opt-in)
+# live Alpaca IEX pull (opt-in)
 # --------------------------------------------------------------------------
 
 @pytest.mark.network
-def test_yfinance_live_contract(tmp_path):
-    from src.data.yfinance_provider import YFinanceProvider
+def test_alpaca_live_contract(tmp_path):
+    from src.core.config import alpaca_credentials
+    from src.data.alpaca import AlpacaProvider
 
-    prov = YFinanceProvider(cache_dir=tmp_path)
+    if alpaca_credentials() is None:
+        pytest.skip("Alpaca keys not configured (.env / config/secrets.yaml)")
+
+    prov = AlpacaProvider(cache_dir=tmp_path)
     end = pd.Timestamp.now(tz=NY)
-    start = end - pd.Timedelta(days=5)
+    start = end - pd.Timedelta(days=7)
     df = prov.get_bars("SPY", TimeFrame.M5, start.to_pydatetime(), end.to_pydatetime())
 
     assert len(df) > 0
