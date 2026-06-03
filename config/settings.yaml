@@ -21,7 +21,7 @@ universe:
   - AMD
 
 data:
-  provider: "yfinance"          # yfinance (free, no keys) | alpaca (Step 2+)
+  provider: "alpaca"            # alpaca (IEX; needs paper keys) | yfinance (free, no keys)
   cache_dir: "data/cache"
   timeframes: ["1m", "5m", "15m", "1h", "1d"]
 
