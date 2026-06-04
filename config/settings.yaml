@@ -25,12 +25,40 @@ data:
   cache_dir: "data/cache"
   timeframes: ["1m", "5m", "15m", "1h", "1d"]
 
-# Cost assumptions — applied to EVERY fill. These are the knobs the cost stress test doubles.
+# Cost assumptions — applied to EVERY fill, grouped by country -> asset class (-> product for
+# India equity). The composable cost model (src/backtest/costs) builds the right components per
+# market. Statutory rates as of 2025; override per your broker. slippage_atr_mult is what the
+# Step-3 cost stress test doubles.
 costs:
-  commission_per_share: 0.0     # US equities ~ $0
-  commission_min: 0.0
-  half_spread_bps: 1.0          # half the bid/ask spread, in basis points
-  slippage_atr_mult: 0.05       # slippage = mult * ATR (scaled by participation), per fill
+  default_market:
+    country: US
+    asset_class: equity
+    product: intraday
+  US:
+    equity:
+      half_spread_bps: 1.0
+      slippage_atr_mult: 0.05
+      commission_per_share: 0.0   # ~$0 (Alpaca)
+      commission_min: 0.0
+      taf_per_share: 0.000166     # FINRA TAF (sell side, capped)
+      taf_cap: 8.30
+      sec_per_million: 0.0        # SEC Sec.31 = $0.00/MM since 2025-05-14
+  India:
+    equity:
+      half_spread_bps: 3.0
+      slippage_atr_mult: 0.08
+      exchange_txn_pct: 0.0000297
+      sebi_pct: 0.000001
+      gst_rate: 0.18
+      delivery:
+        stt_delivery: 0.001       # 0.1% buy+sell
+        stamp_delivery: 0.00015   # 0.015% buy
+        dp_charge: 15.0
+      intraday:
+        stt_intraday_sell: 0.00025  # 0.025% sell
+        stamp_intraday: 0.00003     # 0.003% buy
+        brokerage_pct_intraday: 0.0003
+        brokerage_cap_intraday: 20.0
 
 risk:
   risk_pct_per_trade: 0.005     # 0.5% of equity risked per trade (off stop distance)
