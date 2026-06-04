@@ -17,6 +17,9 @@ strategies, not confirm them.
   manual-approval ON by default.
 - **No look-ahead:** the event-driven engine exposes only *completed* bars via `MarketContext`.
   Indicators must be **causal** (value at bar t uses only bars ≤ t), proven by a unit test.
+- **News/events causality:** an event's *schedule* is public ahead of time (forward-safe to use as
+  a filter), but its *actual result* is look-ahead until release — strategies see results only
+  at/after the release timestamp.
 - Backtest and live share ONE strategy code path (`on_bar`) and ONE engine loop shape.
 - No strategy is "done" until it passes walk-forward + Monte Carlo and survives costs.
 
@@ -24,15 +27,20 @@ strategies, not confirm them.
 data (`src/data`) → indicators (`src/indicators`) → strategies (`src/strategies`)
 → {backtest engine + cost model (`src/backtest`), risk (`src/risk`)}
 → validation (`src/validation`) → reporting (`src/reporting`).
+events/news (`src/events`) is a parallel data-side layer (economic calendar + headlines) that
+strategies consume as an extra analysis layer — a filter (stand down near high-impact releases)
+and a catalyst (news-driven liquidity sweeps). Like costs, it is country-grouped (US, India).
 Execution (`src/execution`) depends on strategies + risk + data only.
 All shared contracts live in `src/core/types.py`. See `docs/COMPONENT_DESIGN.md`.
 
 ## Stack
 Python 3.11+ (managed by `uv`), pandas, numpy, pyarrow (Parquet), SQLite (stdlib),
-pandas-market-calendars. Later: yfinance + alpaca-py (data/broker), smartmoneyconcepts +
-a pinned pandas-ta fork (indicators), statsmodels (stat-arb), streamlit + plotly (dashboard).
-`pandas-ta` on PyPI is broken on modern numpy/pandas — strategies import indicators only
-from `src/indicators/classic.py`, never from a TA lib directly.
+pandas-market-calendars. yfinance + alpaca-py (data/broker), TA-Lib (classic indicators,
+self-contained wheel) + smartmoneyconcepts (SMC; numba pinned to a wheel build), statsmodels
+(stat-arb), an economic-calendar provider + Alpaca news (events/news), streamlit + plotly
+(dashboard). `pandas-ta` is broken on modern numpy/pandas, so we use TA-Lib instead. Strategies
+import indicators only from the `src/indicators/` packages (`classic`, `vumanchu`, `smc`,
+`common`), never from a TA lib directly.
 
 ## Conventions
 - Type hints everywhere; dataclasses for Signal/Trade/Result/Order.
@@ -49,7 +57,10 @@ from `src/indicators/classic.py`, never from a TA lib directly.
 ## Build status (one step at a time, review gate after each)
 - [x] Step 0 — Environment & scaffold (core contracts, BaseStrategy + registry, DataProvider)
 - [x] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
-- [ ] Step 2 — Vertical slice (smc/classic indicators, ICT strategy, engine+costs, metrics)
+- [~] Step 2 — Vertical slice: indicators (classic/VuManChu/SMC ✓), cost model ✓, MultiTFClock ✓,
+      engine ✓, strategy buckets + `ict_fvg` ✓; NEXT: flagship `ict_2022` model, then metrics + OOS
+- [ ] Step 2.8 — Events & News layer (country-grouped economic calendar + Alpaca news; causal
+      schedule vs gated results; ICT consumes as filter + news-sweep catalyst)
 - [ ] Step 3 — Validation (walk-forward, Monte Carlo, overfit/cost guards)
 - [ ] Step 4 — More strategies (momentum, mean-reversion)
 - [ ] Step 5 — Comparison runner + Streamlit dashboard
