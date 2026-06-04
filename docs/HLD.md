@@ -9,7 +9,8 @@ The backtester is a truth machine. Execution is the last, smallest piece.
 | Area | Choice |
 |---|---|
 | Market / broker | US equities, **Alpaca** (free IEX data + paper trading) |
-| First strategy | ICT/SMC (`ict_fvg`); architecture modular so more buckets drop in |
+| First strategy | ICT/SMC — `ict_fvg` (simple) + `ict_2022` flagship (full 2022 model); modular buckets |
+| News / events | Country-grouped economic calendar + Alpaca news; schedule forward-safe, results gated to release; ICT uses it as a filter + news-sweep catalyst |
 | Backtest engine | **Custom event-driven, native multi-timeframe** (no single-series shortcut) |
 | Signal model | **Event-driven** `on_bar(ctx) -> Signal \| None` — same code path backtest & live |
 | Persistence | Parquet (bars, equity curves) + SQLite (journal, run-metadata, results index) |
@@ -35,8 +36,14 @@ The backtester is a truth machine. Execution is the last, smallest piece.
 └───────────────────────────┬─────────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│  EVENTS / NEWS    economic calendar (FOMC/CPI/NFP…) + headlines   │
+│  schedule forward-safe; results gated to release ─────────────┐   │
+└───────────────────────────────────────────────────────────────│──┘
+                                                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
 │  STRATEGY LAYER   BaseStrategy plug-ins → on_bar(ctx) → Signal    │
-│  ict_fvg first; registry-discovered; multi-TF state machines      │
+│  ict_fvg + ict_2022; registry-discovered; multi-TF state machines │
+│  (consume bars + indicators + events as filter / catalyst)        │
 └──────────────┬───────────────────────────────┬──────────────────┘
               ▼                               ▼
 ┌──────────────────────────┐   ┌──────────────────────────────────┐
@@ -62,8 +69,11 @@ That shared code path is what makes "validated in backtest → paper → live" h
 ## Dependency direction (no cycles)
 `core/types` ← everything.
 `data → indicators → strategies → {backtest, risk} → validation → reporting`.
+`events` (economic calendar + news) is a data-side layer consumed by `strategies` (exposed to
+`on_bar` via `MarketContext`); its provider is sealed behind one file and country-grouped.
 `execution` depends on `strategies + risk + data` only.
-Each third-party engine/broker/TA-lib is sealed behind a single file so it is swappable.
+Each third-party engine/broker/TA-lib/data-or-news provider is sealed behind a single file so it
+is swappable.
 
 ## Why a custom event-driven engine (not backtesting.py / vectorbt)
 ICT is inherently multi-timeframe (HTF bias → MTF zone → LTF entry). Wrapping a single-series

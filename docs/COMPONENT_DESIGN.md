@@ -69,11 +69,21 @@ Consume feature-augmented bars, emit `Signal`s. The pluggable heart.
   - `on_fill(trade)` — optional hook.
   - `param_space() -> dict` — grid walk-forward optimizes over.
   - **`@register_strategy`** → fills `STRATEGY_REGISTRY` for zero-wiring discovery.
-- **`ict_fvg.py`** — state machine (idle → armed → in-trade): H1 EMA slope = bias; M15
-  unmitigated FVG/OB = zone; M5 entry when price mitigates the zone *after* a liquidity sweep
-  against bias; stop beyond sweep; target opposing liquidity; killzone = time-of-day filter.
-- *Decision:* event-driven + native multi-TF, no shortcuts. A small state machine reacting to
-  bar closes — exactly how it would behave live.
+- **Buckets (folders):** strategies are grouped into per-family packages — `ict/` (ICT/SMC),
+  `divergence/` (VuManChu), later `momentum/`, `mean_reversion/`, `event/`. Importing
+  `src.strategies` imports each bucket so `@register_strategy` self-registers them. Add a
+  strategy = drop a file in a bucket + decorate it. Shared helpers in `strategies/common.py`.
+- **`ict/ict_fvg.py`** — lightweight ICT: H1 EMA bias; M15 unmitigated FVG zone; entry on retrace
+  into the bias-aligned FVG; ATR-buffered stop; rr-multiple target; killzone filter.
+- **`ict/ict_2022/`** — the flagship full **ICT 2022 model** (its own sub-folder): a session state
+  machine `idle → swept → mss_confirmed → armed → in_trade`. Daily bias + liquidity map (PDH/PDL,
+  equal highs/lows, swings) → **liquidity sweep** of a pool → **MSS + displacement** (CHoCH leaving
+  an FVG) on the LTF → PD array (FVG/OB) in premium/discount → **OTE** (62–79% fib over the
+  displacement leg) entry → stop beyond the sweep, target the next opposite liquidity pool. Every
+  step is a tunable parameter; consumes the events layer (filter near high-impact news; opt-in
+  news-sweep catalyst).
+- *Decision:* event-driven + native multi-TF, no shortcuts. Small state machines reacting to bar
+  closes — exactly how they would behave live.
 
 ---
 
@@ -143,3 +153,26 @@ Place orders through a broker, abstracted so strategy/risk never change.
   **manual-approval gate (ON)** → place via `Broker` → journal. Honors the DD breaker.
 - *Decision:* live = same code path as paper; swapping the adapter changes nothing upstream.
   Streaming `subscribe()` slots in here LATER.
+
+---
+
+## 9. Events & News — `src/events/` (data-side analysis layer)
+A parallel data-side layer giving strategies the macro context ICT relies on — scheduled
+high-impact releases and headlines — without ever leaking the future.
+
+- **`core/types.py` additions** — `Event` (ts, name, country, importance, actual/forecast/previous)
+  and `NewsItem` (ts, headline, symbols, source, sentiment?).
+- **`base.py` — `EventProvider` (ABC):** `get_events(start, end, importance, country)` (economic
+  calendar) and `get_news(symbols, start, end)` (headlines). Country-grouped (US: FOMC/CPI/NFP/PCE;
+  India: RBI/budget/CPI), mirroring the cost model's structure.
+- **`<provider>_calendar.py`** — economic calendar from a vetted real-time + free provider
+  (candidates: Finnhub / FMP / Trading Economics — finalized at build time on authenticity,
+  latency, and free-tier coverage). **`alpaca_news.py`** — headlines via the existing Alpaca creds.
+- **`cache.py`** — Parquet + SQLite, same pattern as the bar cache.
+- **Causality (critical):** an event's *schedule* is public in advance → forward-safe to use as a
+  filter ("is high-impact news within N minutes?"). Its *actual result* is look-ahead until the
+  release timestamp → exposed only at/after release. `MarketContext` gains optional
+  `events_within(timedelta)` / `recent_news()`; the engine injects the provider.
+- *Decision:* providers sealed behind one file (swappable), country-grouped, cached. The ICT
+  strategy consumes events two ways — **filter** (stand down near releases) and **catalyst**
+  (trade the post-news liquidity sweep).
