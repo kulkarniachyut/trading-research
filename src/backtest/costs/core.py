@@ -94,9 +94,11 @@ class CostComponent(Protocol):
 @dataclass(frozen=True, slots=True)
 class FillResult:
     fill_price: float                  # price after PRICE adjustments (moved against you)
-    cost: float                        # total cost in account currency
+    cost: float                        # total cost in account currency (price_cost + cash_cost)
     breakdown: dict[str, float]        # component name -> currency cost
     items: tuple[CostItem, ...]
+    price_cost: float = 0.0            # spread+slippage already reflected in fill_price
+    cash_cost: float = 0.0             # commissions/taxes/fees charged separately
 
 
 @dataclass
@@ -118,12 +120,24 @@ class CostModel:
         fill_price = ctx.price + direction * per_unit_price
 
         breakdown: dict[str, float] = {}
-        total = 0.0
+        price_cost = 0.0
+        cash_cost = 0.0
         for it in items:
-            dollars = it.amount * abs(ctx.qty) * mult if it.kind is CostKind.PRICE else it.amount
+            if it.kind is CostKind.PRICE:
+                dollars = it.amount * abs(ctx.qty) * mult
+                price_cost += dollars
+            else:
+                dollars = it.amount
+                cash_cost += dollars
             breakdown[it.name] = breakdown.get(it.name, 0.0) + dollars
-            total += dollars
-        return FillResult(fill_price=fill_price, cost=total, breakdown=breakdown, items=tuple(items))
+        return FillResult(
+            fill_price=fill_price,
+            cost=price_cost + cash_cost,
+            breakdown=breakdown,
+            items=tuple(items),
+            price_cost=price_cost,
+            cash_cost=cash_cost,
+        )
 
     def with_slippage_stress(self, factor: float) -> "CostModel":
         """Return a copy with slippage scaled by ``factor`` (the Step-3 cost-fragility stress)."""
