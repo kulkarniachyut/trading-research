@@ -37,6 +37,20 @@ def rsi(df: pd.DataFrame, period: int = 14) -> pd.Series:
     return pd.Series(talib.RSI(_f(df, "close"), timeperiod=period), index=df.index, name=f"rsi_{period}")
 
 
+def mfi(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """Money Flow Index (0-100) — volume-weighted RSI."""
+    out = talib.MFI(_f(df, "high"), _f(df, "low"), _f(df, "close"), _f(df, "volume"), timeperiod=period)
+    return pd.Series(out, index=df.index, name=f"mfi_{period}")
+
+
+def stochrsi(df: pd.DataFrame, period: int = 14, fastk: int = 5, fastd: int = 3) -> pd.DataFrame:
+    """Stochastic RSI — %K and %D lines (0-100)."""
+    k, d = talib.STOCHRSI(
+        _f(df, "close"), timeperiod=period, fastk_period=fastk, fastd_period=fastd, fastd_matype=0
+    )
+    return pd.DataFrame({"stochrsi_k": k, "stochrsi_d": d}, index=df.index)
+
+
 def bollinger(df: pd.DataFrame, period: int = 20, n_std: float = 2.0) -> pd.DataFrame:
     """Bollinger Bands: SMA mid +/- ``n_std`` standard deviations."""
     upper, mid, lower = talib.BBANDS(
