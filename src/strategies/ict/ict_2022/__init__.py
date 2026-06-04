@@ -21,6 +21,7 @@ from src.strategies.ict.ict_2022._model import (
     swing_levels,
 )
 from src.strategies.ict.ict_2022._pd_arrays import IFVG, breaker_level, inverse_fvgs
+from src.strategies.ict.ict_2022._strategy import Ict2022
 
 __all__ = [
     # structure / liquidity / time
@@ -45,4 +46,6 @@ __all__ = [
     "IFVG",
     "inverse_fvgs",
     "breaker_level",
+    # strategy
+    "Ict2022",
 ]

@@ -58,12 +58,14 @@ class BacktestEngine:
         instrument: InstrumentSpec,
         initial_equity: float = 100_000.0,
         risk_pct: float = 0.005,
+        max_leverage: float = 1.0,
         atr_period: int = 14,
     ) -> None:
         self.cost_model = cost_model
         self.instrument = instrument
         self.initial_equity = initial_equity
         self.risk_pct = risk_pct
+        self.max_leverage = max_leverage
         self.atr_period = atr_period
 
     # --- public ------------------------------------------------------------
@@ -193,13 +195,20 @@ class BacktestEngine:
         return None
 
     def _size(self, equity: float, entry: float, stop: Optional[float]) -> float:
-        """Fixed-fractional sizing off the stop distance (whole units). Minimal until the Step-6
-        risk layer; returns 0 if no stop distance or the risk buys nothing."""
+        """Fixed-fractional sizing capped by gross notional exposure.
+
+        Tiny structural stops can otherwise imply unrealistic leverage and make costs dominate the
+        backtest. The full risk layer lands later; this local cap keeps v1 strategy tests honest.
+        """
         risk_cash = equity * self.risk_pct
         if stop is None or abs(entry - stop) <= 0:
             return 0.0
-        qty = risk_cash / (abs(entry - stop) * self.instrument.multiplier)
-        return float(math.floor(qty))
+        risk_qty = risk_cash / (abs(entry - stop) * self.instrument.multiplier)
+        if self.max_leverage <= 0 or entry <= 0:
+            return float(math.floor(risk_qty))
+        max_notional = equity * self.max_leverage
+        notional_qty = max_notional / (entry * self.instrument.multiplier)
+        return float(math.floor(min(risk_qty, notional_qty)))
 
     def _unrealized(self, pos: _Open, close: float) -> float:
         return (close - pos.entry_fill) * pos.qty * pos.dir - pos.entry_cash

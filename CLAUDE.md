@@ -58,7 +58,8 @@ import indicators only from the `src/indicators/` packages (`classic`, `vumanchu
 - [x] Step 0 — Environment & scaffold (core contracts, BaseStrategy + registry, DataProvider)
 - [x] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
 - [~] Step 2 — Vertical slice: indicators (classic/VuManChu/SMC ✓), cost model ✓, MultiTFClock ✓,
-      engine ✓, strategy buckets + `ict_fvg` ✓; NEXT: flagship `ict_2022` model, then metrics + OOS
+      engine ✓, strategy buckets + `ict_fvg` ✓, flagship `ict_2022` v1 ✓; NEXT: SPY/QQQ
+      validation, then metrics + OOS
 - [ ] Step 2.8 — Events & News layer (country-grouped economic calendar + Alpaca news; causal
       schedule vs gated results; ICT consumes as filter + news-sweep catalyst)
 - [ ] Step 3 — Validation (walk-forward, Monte Carlo, overfit/cost guards)
