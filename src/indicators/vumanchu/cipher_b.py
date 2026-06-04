@@ -2,11 +2,11 @@
 
 This module is deliberately thin: it *composes* standalone pieces rather than reimplementing them,
 so each part stays independently usable:
-- ``wavetrend.wavetrend``        — the WT1/WT2 momentum waves (the backbone)
-- ``money_flow`` (below)         — VuManChu's RSI+MFI area (green/red)
-- ``classic.stochrsi`` / ``rsi`` — confirmation oscillators
-- ``utils.crossover/crossunder`` — WT cross detection
-- ``divergence.find_divergences``— regular/hidden divergences on the WaveTrend
+- ``vumanchu.wavetrend``           — the WT1/WT2 momentum waves (the backbone)
+- ``money_flow`` (below)           — VuManChu's RSI+MFI area (green/red)
+- ``classic.stochrsi`` / ``rsi``   — confirmation oscillators
+- ``common.crosses``               — WT cross detection
+- ``common.divergence``            — regular/hidden divergences on the WaveTrend
 
 Everything is causal (each primitive is proven causal on its own), so ``cipher_b`` is causal too.
 Reproduces the *behavior* of the TradingView script; exact decimals will differ (EMA seeding etc.).
@@ -18,9 +18,9 @@ import numpy as np
 import pandas as pd
 
 from src.indicators import classic
-from src.indicators.divergence import find_divergences
-from src.indicators.utils import crossover, crossunder
-from src.indicators.wavetrend import wavetrend
+from src.indicators.common.crosses import crossover, crossunder
+from src.indicators.common.divergence import find_divergences
+from src.indicators.vumanchu.wavetrend import wavetrend
 
 
 def money_flow(df: pd.DataFrame, period: int = 60, multiplier: float = 150.0) -> pd.Series:
