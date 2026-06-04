@@ -1,6 +1,27 @@
-"""Smart Money Concepts (ICT) indicators — wraps the ``smartmoneyconcepts`` library into
-normalized, **causal** columns (FVG, order blocks, liquidity, swings, BOS/CHoCH).
+"""Smart Money Concepts (ICT) indicators — normalized wrappers over ``smartmoneyconcepts`` plus the
+``causal_apply`` bridge that makes their (repainting) output look-ahead-safe.
 
-Populated in Checkpoint 2.2. The library's swing/structure functions look ahead (repaint), so the
-wrapper lags confirmations and every output is run through ``indicators.causality.assert_causal``.
+Use the wrappers inside the event-driven engine on completed-bar windows, or wrap them with
+``causal_apply`` to precompute a causal feature column. See ``indicators.py`` for the causality
+contract.
 """
+
+from src.indicators.smc.causal import causal_apply
+from src.indicators.smc.indicators import (
+    bos_choch,
+    fvg,
+    liquidity,
+    order_blocks,
+    previous_high_low,
+    swings,
+)
+
+__all__ = [
+    "swings",
+    "fvg",
+    "bos_choch",
+    "order_blocks",
+    "liquidity",
+    "previous_high_low",
+    "causal_apply",
+]
