@@ -24,9 +24,11 @@ indicators = [
     "ta-lib>=0.6",
 ]
 smc = [
-    # ICT / smart-money-concepts (pulls numba/llvmlite). Kept separate so the classic
-    # indicators don't depend on the LLVM build toolchain.
-    "smartmoneyconcepts>=0.0.20",
+    # ICT / smart-money-concepts. It declares only `numba>=0.58.1` (no upper bound), so an
+    # unconstrained resolve grabs the newest numba->llvmlite, which has NO macOS-x86_64 wheel and
+    # fails building llvmlite from source. Pinning numba to 0.61.x uses llvmlite 0.44 wheels.
+    "smartmoneyconcepts>=0.0.27",
+    "numba>=0.61,<0.62",
 ]
 stats = [
     "statsmodels>=0.14",  # stat-arb (Step 4)
