@@ -22,22 +22,38 @@ OrderStatus = Literal["new", "submitted", "filled", "cancelled", "rejected"]
 
 
 class TimeFrame(Enum):
-    """Supported bar timeframes, ordered low → high."""
+    """Supported bar timeframes, ordered low → high.
+
+    ``minutes`` is the bar's span in *trading* minutes and doubles as the ordering key (D1 = one
+    6.5h RTH session = 390; W1 = 5 sessions = 1950). ``pandas_freq`` is the resample alias.
+    """
 
     M1 = "1m"
+    M2 = "2m"
+    M3 = "3m"
     M5 = "5m"
     M15 = "15m"
+    M30 = "30m"
     H1 = "1h"
+    H2 = "2h"
+    H4 = "4h"
     D1 = "1d"
+    W1 = "1w"
 
     @property
     def minutes(self) -> int:
-        return {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "1d": 390}[self.value]
+        return {
+            "1m": 1, "2m": 2, "3m": 3, "5m": 5, "15m": 15, "30m": 30,
+            "1h": 60, "2h": 120, "4h": 240, "1d": 390, "1w": 1950,
+        }[self.value]
 
     @property
     def pandas_freq(self) -> str:
-        """Resampling alias for pandas (e.g. ``5min``, ``1h``, ``1D``)."""
-        return {"1m": "1min", "5m": "5min", "15m": "15min", "1h": "1h", "1d": "1D"}[self.value]
+        """Resampling alias for pandas (e.g. ``5min``, ``4h``, ``1D``, ``1W``)."""
+        return {
+            "1m": "1min", "2m": "2min", "3m": "3min", "5m": "5min", "15m": "15min",
+            "30m": "30min", "1h": "1h", "2h": "2h", "4h": "4h", "1d": "1D", "1w": "1W",
+        }[self.value]
 
     def __lt__(self, other: "TimeFrame") -> bool:
         return self.minutes < other.minutes

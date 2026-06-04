@@ -32,6 +32,8 @@ def bar_close_time(ts: pd.Timestamp, timeframe: TimeFrame) -> pd.Timestamp:
     """Wall-clock time a bar *opened* at ``ts`` finishes forming. Bars are open-labeled, so a
     bar is complete only once this time has passed. Daily bars roll to the next calendar day.
     """
+    if timeframe is TimeFrame.W1:
+        return ts.normalize() + pd.Timedelta(weeks=1)
     if timeframe is TimeFrame.D1:
         return ts.normalize() + pd.Timedelta(days=1)
     return ts + pd.Timedelta(minutes=timeframe.minutes)
