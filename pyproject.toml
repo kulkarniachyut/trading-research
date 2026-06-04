@@ -19,9 +19,17 @@ data = [
     "alpaca-py>=0.30",
 ]
 indicators = [
-    # pandas-ta on PyPI is broken on modern numpy/pandas; pinned fork added at Step 2.
+    # TA-Lib for classic indicators — modern wheels are self-contained (no system C lib
+    # needed). Replaces pandas-ta, which is broken on current numpy/pandas.
+    "ta-lib>=0.6",
+]
+smc = [
+    # ICT / smart-money-concepts (pulls numba/llvmlite). Kept separate so the classic
+    # indicators don't depend on the LLVM build toolchain.
     "smartmoneyconcepts>=0.0.20",
-    "statsmodels>=0.14",
+]
+stats = [
+    "statsmodels>=0.14",  # stat-arb (Step 4)
 ]
 reporting = [
     "streamlit>=1.36",
