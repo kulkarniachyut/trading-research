@@ -116,6 +116,7 @@ def run_portfolio(
     *,
     provider,
     crypto_provider=None,
+    references: Optional[dict[str, str]] = None,
     base_tf: TimeFrame = TimeFrame.M5,
     initial_equity: float = 100_000.0,
     risk_pct: float = 0.005,
@@ -125,10 +126,13 @@ def run_portfolio(
 
     ``make_strategy`` is a *factory* (not an instance) so each symbol gets a clean state machine.
     Crypto items are fetched via ``crypto_provider`` (24/7, no RTH filter) if given, else ``provider``.
+    ``references`` maps a traded symbol → its SMT correlate (e.g. ``{"SPY": "QQQ"}``); that symbol's
+    bars are fetched (same provider class) and passed as ``reference_bars`` for ``ctx.ref()``.
     A per-symbol fetch/run failure is recorded in ``errors`` and skipped, never aborting the sweep.
     """
     start = pd.Timestamp(start)
     end = pd.Timestamp(end)
+    references = references or {}
     results: dict[str, Result] = {}
     errors: dict[str, str] = {}
     for item in universe:
@@ -138,8 +142,10 @@ def run_portfolio(
             if bars is None or bars.empty:
                 errors[item.symbol] = "no bars"
                 continue
+            ref_sym = references.get(item.symbol)
+            ref_bars = src.get_bars(ref_sym, base_tf, start, end) if ref_sym else None
             eng = _engine_for(item, initial_equity, risk_pct, max_leverage)
-            results[item.symbol] = eng.run(make_strategy(), bars, base_tf)
+            results[item.symbol] = eng.run(make_strategy(), bars, base_tf, reference_bars=ref_bars)
         except Exception as exc:  # noqa: BLE001 — one bad symbol must not kill the sweep
             errors[item.symbol] = f"{type(exc).__name__}: {exc}"
     return PortfolioResult(results=results, start=start, end=end, initial_equity=initial_equity,

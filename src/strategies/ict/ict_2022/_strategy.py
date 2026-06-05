@@ -27,6 +27,7 @@ from src.strategies.ict.ict_2022._model import (
     structure_shift,
 )
 from src.strategies.ict.ict_2022._pd_arrays import breaker_level, inverse_fvgs
+from src.strategies.ict.ict_2022._smt import smt_divergence
 
 
 @dataclass(slots=True)
@@ -58,6 +59,8 @@ class Ict2022(BaseStrategy):
             "require_daily_bias": False,
             "require_daily_pd_alignment": False,
             "require_inducement": False,
+            "require_smt": False,          # Phase C: confirm the sweep with SMT divergence vs a correlated ref
+            "smt_lookback": 12,
             "entry_require_fvg": False,    # OTE entry by default; FVG overlap = optional confluence
             "entry_confirm": False,        # require a confirmation close in-trade-direction (no knife-catch)
             "use_ifvg_confluence": False,
@@ -97,6 +100,7 @@ class Ict2022(BaseStrategy):
             "killzones": [[("10:00", "11:00")], [("09:50", "11:00")],
                           [("09:30", "11:30"), ("13:30", "15:30")]],
             "entry_confirm": [False, True],
+            "require_smt": [False, True],
         }
 
     def on_start(self, ctx: MarketContext) -> None:
@@ -147,6 +151,10 @@ class Ict2022(BaseStrategy):
         if not self._daily_allows(ctx, direction):
             return
         if self.params["require_inducement"] and not inducement_taken(m5, direction):
+            return
+        if self.params["require_smt"] and not smt_divergence(
+            m5, ctx.ref(TimeFrame.M5), direction, lookback=self.params["smt_lookback"]
+        ):
             return
         self._setup = _Setup(direction=direction, sweep=sweep, swept_at=self._step)
         self._state = "swept"

@@ -188,3 +188,13 @@ class MarketContext(ABC):
     @abstractmethod
     def account(self) -> Account:
         """Current account snapshot (cash/equity/buying power)."""
+
+    def ref(self, timeframe: TimeFrame):
+        """Completed bars (as of ``now``) of the single *correlated reference* instrument, for SMT
+        divergence (Phase C). Returns an empty DataFrame when no reference is wired — so strategies
+        treat "no reference" as "no SMT confluence available". Causal: reference exposes only bars
+        closed at or before ``now``, same as ``bars()``. Default no-op keeps it optional for
+        contexts (live, tests) that don't supply a reference."""
+        import pandas as pd
+
+        return pd.DataFrame()

@@ -17,9 +17,11 @@ from src.core.types import Account, MarketContext, Position, TimeFrame
 
 
 class BacktestContext(MarketContext):
-    def __init__(self, clock: MultiTFClock, symbol: str) -> None:
+    def __init__(self, clock: MultiTFClock, symbol: str,
+                 ref_clock: MultiTFClock | None = None) -> None:
         self._clock = clock
         self._symbol = symbol
+        self._ref_clock = ref_clock
         self._now: datetime | None = None
         self._price: float = float("nan")
         self._position = Position(symbol, qty=0.0, avg_px=0.0)
@@ -41,6 +43,12 @@ class BacktestContext(MarketContext):
 
     def window(self, timeframe: TimeFrame, n: int) -> pd.DataFrame:
         return self._clock.window(timeframe, self._now, n)
+
+    def ref(self, timeframe: TimeFrame) -> pd.DataFrame:
+        """Completed bars of the correlated reference symbol as of ``now`` (SMT). Empty if none."""
+        if self._ref_clock is None:
+            return pd.DataFrame()
+        return self._ref_clock.completed(timeframe, self._now)
 
     @property
     def price(self) -> float:

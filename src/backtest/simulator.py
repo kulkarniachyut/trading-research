@@ -70,11 +70,16 @@ class BacktestEngine:
 
     # --- public ------------------------------------------------------------
 
-    def run(self, strategy: BaseStrategy, base_bars: pd.DataFrame, base_tf: TimeFrame) -> Result:
+    def run(self, strategy: BaseStrategy, base_bars: pd.DataFrame, base_tf: TimeFrame,
+            reference_bars: Optional[pd.DataFrame] = None) -> Result:
         symbol = self.instrument.symbol
         timeframes = strategy.required_timeframes or [base_tf]
         clock = MultiTFClock(base_bars, base_tf, timeframes)
-        ctx = BacktestContext(clock, symbol)
+        # Optional correlated reference (Phase C / SMT): its own clock on the same base_tf, served
+        # causally against the same `now` — so the strategy sees only the reference's completed bars.
+        ref_clock = MultiTFClock(reference_bars, base_tf, timeframes) if reference_bars is not None \
+            and not reference_bars.empty else None
+        ctx = BacktestContext(clock, symbol, ref_clock=ref_clock)
         strategy.on_start(ctx)
 
         atr = classic.atr(base_bars, self.atr_period)  # for slippage; read at the prior bar
