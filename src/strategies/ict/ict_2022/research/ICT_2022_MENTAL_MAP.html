@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICT 2022 — Mental Map (engineering synthesis)</title>
+<style>
+  :root { --ink:#1a1a2e; --muted:#5a6275; --line:#e3e6ee; --bg:#fbfcff;
+          --good:#127a3d; --bad:#b00020; --warn:#a06a00; --accent:#2a4d8f; }
+  * { box-sizing: border-box; }
+  body { font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); background: var(--bg); max-width: 960px; margin: 0 auto; padding: 32px 22px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 38px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); color: var(--accent); }
+  h3 { font-size: 1.06rem; margin: 22px 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .lead { background:#fff; border:1px solid var(--line); border-left:4px solid var(--accent);
+          border-radius:8px; padding:14px 18px; margin:18px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.94rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #eef2fb; }
+  code { background:#eef1f7; padding:1px 5px; border-radius:4px; font-size:0.86em; }
+  .good { color: var(--good); font-weight:600; } .bad { color: var(--bad); font-weight:600; } .warn { color: var(--warn); font-weight:600; }
+  ul { margin: 6px 0 10px; } li { margin: 3px 0; }
+  .pill { display:inline-block; font-size:0.74rem; padding:1px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
+  .layers li { margin: 8px 0; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 0.85rem; border-top:1px solid var(--line); padding-top:14px; }
+</style>
+</head>
+<body>
+
+<h1>ICT 2022 — Mental Map</h1>
+<p class="sub">Engineering synthesis from the 2022 ICT Mentorship decks · for the <code>ict_2022</code> strategy ·
+built to be implemented &amp; backtested, not traded discretionarily. See <code>DECK_NOTES.md</code> for per-deck notes and
+<code>LEARNING_TRACKER.md</code> for read/pending status.</p>
+
+<div class="lead">
+<b>Core thesis.</b> Price is delivered by an algorithm around <b>TIME</b> and <b>LIQUIDITY</b>. The daily candle is a
+<b>Power-of-3</b>: <i>Accumulation</i> (consolidation near the open) → <i>Manipulation</i> (a "Judas swing" grabs
+liquidity on one side) → <i>Distribution</i> (expansion to the <b>draw on liquidity</b>) → Close. Smart money buys
+<b>discount</b> / sells <b>premium</b>; retail does the opposite. <b>News is the <i>alibi</i> for the manipulation.</b>
+</div>
+
+<div class="lead" style="border-left-color:var(--bad)">
+<b>The gap that explains our breakeven result.</b> ICT is a <b>daily-narrative, session-anchored, draw-on-liquidity
+machine</b>. Our current <code>ict_2022</code> is a <b>context-free pattern detector</b> — it fires sweep→MSS→FVG
+<i>anywhere</i> in a killzone, with no daily narrative, no Midnight-NY-Open anchor, no draw, no premium/discount
+enforcement. <b>We built the LTF trigger and skipped the narrative that is supposed to gate it.</b> Right trigger, random context.
+</div>
+
+<h2>The four nested layers (we built only #3)</h2>
+<ol class="layers">
+  <li><b>TIME — anchors.</b>
+    <ul>
+      <li><b>Midnight NY Open (MNO)</b> = the daily pivot. Premium above, discount below.</li>
+      <li><b>08:30 ET</b> data release = the morning manipulation/Judas. <b>09:30</b> equities open behaves the same.</li>
+      <li>Sessions: London (02–05), <b>NY AM (08:30–noon)</b>, <b>London Close (10:00–11:00 = reversal of the daily range; 10–12 on news days)</b>, <b>NY PM (13:30–16:00)</b>.</li>
+      <li><b>No-trade 12:00–13:00 (lunch).</b> Afternoon usually follows the trend; algo "starts" ~19:30 prior day.</li>
+      <li><b>Max ~4 trades/day (2 AM, 2 PM).</b> Judas/Power-of-3 is fractal across sessions, daily/weekly/monthly candles.</li>
+    </ul>
+  </li>
+  <li><b>NARRATIVE / BIAS — top-down ("where will price REACH for").</b>
+    <ul>
+      <li><b>Weekly draw on liquidity</b> = the obvious pool price is reaching for: PWH/PWL, old highs/lows, equal highs/lows. <i>"Every-day bias is unrealistic"</i> — think weekly expansion <i>target</i>, not close.</li>
+      <li><b>DXY</b> for risk-on/off (DXY↑ = risk-off safe haven; inversely correlated to ES/indices).</li>
+      <li>Daily-bias trigger: a sweep of a daily high + 3-bar reversal (confirmed when the 4th candle trades lower) → expect lower; vice-versa sweeping a low.</li>
+      <li><b>Trade WITH the draw / daily trend.</b> Counter-trend is explicitly a <i>low-probability</i> condition.</li>
+    </ul>
+  </li>
+  <li><b>THE SETUP — the 5-step entry (this is what we have).</b>
+    <ol>
+      <li>Time of day (in a killzone).</li>
+      <li><b>Narrative set</b> (HTF bias / draw aligned) — <span class="bad">we under-implement this</span>.</li>
+      <li>Liquidity swept = the Judas/manipulation grabs a pool (sellside for buys, buyside for sells), <b>anchored to MNO / 08:30 / session open</b>.</li>
+      <li>Displacement / MSS (energetic move that leaves an FVG; market-structure shift).</li>
+      <li><b>Entry in the FVG, in discount (buys) / premium (sells)</b> of the dealing range, with <b>1m MSS confirmation</b>; drill timeframe to use the highest-TF FVG present.</li>
+    </ol>
+  </li>
+  <li><b>ARRAYS &amp; TARGETS — the draw.</b>
+    <ul>
+      <li>PD arrays: <b>FVG</b>, <b>Order Block</b> (+ <b>mean threshold</b> = 50%-body; a body-close through it invalidates), <b>Breaker</b> (FVG+breaker = "big confluence"), <b>old high/low</b> (flips premium↔discount array once traded through; then acts as S/R and as a target — esp. with an FVG), <b>Inverse FVG</b>.</li>
+      <li>Dealing range = swing-high → swing-low; equilibrium = 50%.</li>
+      <li><b>Target = the opposite array / draw</b>: buy discount → target premium liquidity/FVG/OB; sell premium → target discount. Old highs / PWH / equal highs. Partial at the first opposing array.</li>
+      <li><b>SMT</b> = <b>confirmation on a correlated pair</b> (ES↔NQ; SPY↔QQQ): compare swing <b>lows</b> when bullish, swing <b>highs</b> when bearish. <i>"Not a standalone indicator."</i> Strong at news time → take the stronger (non-confirming) pair.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>News &amp; low-probability filters</h2>
+<ul>
+  <li><b class="good">News = CATALYST (not a filter).</b> ICT trades <b>only high/medium-impact days</b>; the morning manipulation <i>times off</i> the 08:30 release ("news is an alibi for manipulation"). Ignore the 2 big news wicks. <span class="pill">our Phase-D data already confirms: news/high-VIX days were the strategy's best</span></li>
+  <li><b class="bad">Low probability — stand down:</b> NFP week (Wed NY / Thu / Fri); the London &amp; AM session after an FOMC whipsaw; <b>counter-trend</b>; lunch 12–13.</li>
+</ul>
+
+<h2>Our code vs. the real model</h2>
+<table>
+<tr><th>Status</th><th>Items</th></tr>
+<tr><td class="good">✅ Have</td><td>sweep, MSS, displacement, FVG, OTE, premium/discount <i>primitives</i>, OB, breaker, IFVG, inducement, killzone filter, <code>min_disp_strength</code>, SMT primitive, VIX/news toggles</td></tr>
+<tr><td class="bad">🔴 Backwards / broken</td><td><b>news = filter</b> (should be catalyst) · <b>bias = persistent BOS</b> (should be draw-on-liquidity + DXY) · <b>SMT standalone on stock↔own-index</b> (should confirm on ES↔NQ swing points) · <b>premium/discount not enforced</b> on entry/target</td></tr>
+<tr><td class="warn">⛔ Missing</td><td><b>MNO anchor + Power-of-3 / AMD day model</b> · <b>draw-on-liquidity HTF map</b> (PDH/PDL, PWH/PWL, equal H/L) · <b>old-high/low array-flip + as target</b> · <b>mean-threshold invalidation</b> · <b>multi-TF FVG drill + 1m MSS confirm</b> · <b>AM/PM session structure + no-trade lunch + max-trades/day</b> · <b>news-timed entries</b> · <b>DXY bias</b></td></tr>
+</table>
+
+<h2>Idea backlog (prioritized: confidence × impact, overfit-flagged)</h2>
+
+<h3>Tier 1 — high confidence, low overfit-risk, data-backed (do first, as toggles)</h3>
+<ol>
+  <li><b>News as catalyst, not filter</b> — prefer/require high-medium-impact days; time the Judas off 08:30. <span class="pill good">Phase-D data already supports</span></li>
+  <li><b>Enforce premium/discount</b> on entry (buys only in discount, sells only in premium of the dealing range) + <b>target the opposite array</b>. Primitive already exists.</li>
+  <li><b>Rebuild <code>daily_bias</code> as draw-on-liquidity</b> (nearest obvious pool: PDH/PDL, PWH/PWL, equal H/L) + <b>DXY risk-on/off</b>; only trade <b>with</b> the draw (kills the counter-trend trades).</li>
+</ol>
+
+<h3>Tier 2 — the structural redesign (where the real edge likely lives; biggest build)</h3>
+<ol start="4">
+  <li><b>MNO anchor + Power-of-3 day engine:</b> midnight-NY-open reference; detect the <b>morning Judas</b> (manipulation above/below MNO around 08:30) as <i>the</i> qualifying sweep; entry in the opening range; target distribution to the draw.</li>
+  <li><b>Daily-narrative gate:</b> take the sweep→MSS→FVG trigger only when it aligns with bias + draw + premium/discount + session (a context wrapper around the existing trigger).</li>
+  <li><b>AM/PM session structure</b> + no-trade 12–13 + max-trades/day discipline.</li>
+</ol>
+
+<h3>Tier 3 — confluence &amp; array upgrades</h3>
+<ol start="7">
+  <li><b>Fix SMT</b> → ES↔NQ / SPY↔QQQ swing-point confirmation (not standalone, not stock↔index).</li>
+  <li><b>Old high/low as array + target</b> (flip to discount/premium once traded through; FVG+old-high combo).</li>
+  <li><b>Mean-threshold invalidation</b> on OB entries; <b>FVG+breaker</b> confluence; <b>multi-TF FVG drill</b> + <b>1m MSS</b> entry confirm.</li>
+  <li><b>Ignore news wicks</b>; partial-at-first-array + trail management; <b>pyramiding</b> (later).</li>
+</ol>
+
+<h2>Glossary (fast reference)</h2>
+<ul>
+  <li><b>MNO</b> = Midnight New York Open (00:00 ET) — daily premium/discount pivot.</li>
+  <li><b>Judas swing / protraction</b> = the fake move before the real move; the manipulation that grabs liquidity.</li>
+  <li><b>Power of 3 / AMD</b> = Accumulation → Manipulation → Distribution (the daily candle anatomy).</li>
+  <li><b>Draw on liquidity</b> = the pool price is reaching for (the target/bias).</li>
+  <li><b>Displacement</b> = an energetic, obvious move that leaves a Fair Value Gap (imbalance).</li>
+  <li><b>MSS</b> = Market Structure Shift (break of the most recent swing in the new direction).</li>
+  <li><b>OTE</b> = Optimal Trade Entry (62–79% retrace of the displacement leg).</li>
+  <li><b>SSL / BSL</b> = Sell-Side / Buy-Side Liquidity (stops below lows / above highs).</li>
+  <li><b>SMT</b> = Smart Money Technique — divergence between correlated pairs (confirmation).</li>
+  <li><b>Mean threshold</b> = 50% of an order-block body (invalidation level).</li>
+  <li><b>Killzone</b> = a session window where the algo seeks liquidity (London / NY AM / London Close / NY PM).</li>
+</ul>
+
+<footer>
+Source: 2022 ICT Mentorship (Inner Circle Trader, "@arjoio" notes) — the user's purchased material. This file is an
+engineering synthesis of <i>concepts/methods</i> for implementation, not a reproduction of the decks. Generated during the
+<code>ict_2022</code> hardening effort. Strategy verdict to date: A–D scaffolding complete, edge at breakeven; this map is
+the basis for the model-correctness redesign (Tier 1 → Tier 2 → Tier 3) before the definitive validation.
+</footer>
+
+</body>
+</html>
