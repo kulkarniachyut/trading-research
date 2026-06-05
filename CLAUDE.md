@@ -72,12 +72,20 @@ credits (else SPY/QQQ RTH proxy). Diagnostics in `scripts/diag_*.py` + `scripts/
 - [x] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
 - [x] Step 2 — Vertical slice: indicators ✓, cost model ✓, MultiTFClock ✓, engine ✓, strategy
       buckets + `ict_fvg` ✓, flagship `ict_2022` v1 ✓, SPY/QQQ multi-regime validation ✓ (→ finding above)
-- [ ] Step 2.7 — **ICT hardening (built A→B→C→D→E, in order; full plan in `docs/ICT_RESEARCH_AND_PLAN.md`)**
-  - [ ] A — Instrument & cost reality: futures asset class + cost model (MES/MNQ micros), re-test economics
-  - [ ] B — Time precision & selectivity: Silver-Bullet / NY-AM-Macro windows, tighter setup selection
-  - [ ] C — SMT divergence: multi-symbol `MarketContext` (NQ↔ES / QQQ↔SPY) + SMT confluence (architectural)
-  - [ ] D — Events/News + macro regime: economic-calendar filter + VIX/DXY/JPY risk-regime gate (the old Step 2.8)
-  - [ ] E — Honest validation: walk-forward + Monte Carlo + overfit/cost guards on the reserved 2025/26 holdout
+- [ ] Step 2.7 — **ICT hardening (full plan in `docs/ICT_RESEARCH_AND_PLAN.md`)**
+  - [x] A — Instrument & cost reality: futures cost model + CME micro specs ✓; verdict: cost ≠ the edge
+        problem (futures halve cost, but gross is negative — the **signal** is the problem)
+  - [x] B — Time precision & selectivity: formation/entry-window split + `min_disp_strength` ✓; verdict:
+        edge concentrates in the Silver-Bullet hour but single-symbol selectivity is **net-negative** →
+  - **Reframe:** frequency (a few trades/week, net+) comes from **BREADTH** (universe × full session),
+    not narrower tuning; breadth is also the anti-overfit defense (cross-sectional consistency, 100+ trades).
+    Crypto (Alpaca, 24/7) tests the session thesis for free. Build the full scaffolding, measure each
+    layer, THEN one definitive multi-ticker 4–5yr run. (Revised sequence in the plan doc §5a.)
+  - [ ] B.5 — **Multi-symbol portfolio foundation** (the spine): universe scanner + portfolio runner +
+        `MarketContext.ref()`; breadth baseline on ~15–20 US equities/ETFs **+ liquid crypto**
+  - [ ] C — SMT divergence (toggle, measured) on the multi-symbol engine (QQQ↔SPY, BTC↔ETH)
+  - [ ] D — Events/News + macro-regime gate (toggle, measured): economic calendar + VIX/DXY/JPY risk-off
+  - [ ] E — Definitive breadth run + validation: portfolio walk-forward + Monte Carlo on the reserved 2025/26
 - [ ] Step 4 — More strategies (momentum, mean-reversion)
 - [ ] Step 5 — Comparison runner + Streamlit dashboard
 - [ ] Step 6 — Paper execution (Broker, risk layer, paper loop, manual approval)

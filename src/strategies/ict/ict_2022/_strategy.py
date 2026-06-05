@@ -46,9 +46,15 @@ class Ict2022(BaseStrategy):
     @classmethod
     def default_params(cls) -> dict:
         return {
-            "killzones": [("09:30", "11:30"), ("13:30", "15:30")],
-            # Daily bias is an ICT-correct *filter* but a strict structural gate kills almost all
-            # setups; default off (a tunable to A/B in validation), like SMT will be.
+            # Phase B: edge-pocket diagnostics (scripts/diag_edge_pockets.py) showed gross edge is
+            # concentrated in trades that *enter* in the **Silver Bullet hour (10–11 ET)** (+0.22R)
+            # while the broad killzone is noise. The setup may *form* earlier in the AM, so the
+            # formation window (`killzones`) is broad and only the *entry* is gated to the Silver
+            # Bullet via `entry_killzones`. (Gating the whole machine to 10–11 over-restricts —
+            # the sweep/MSS can't form in time — which is why a single window starves it.)
+            "killzones": [("09:30", "11:00")],
+            "entry_killzones": [("10:00", "11:00")],   # trigger only here; None = same as killzones
+            # Daily bias gating did NOT help (aligned trades were gross-negative); leave off.
             "require_daily_bias": False,
             "require_daily_pd_alignment": False,
             "require_inducement": False,
@@ -65,6 +71,9 @@ class Ict2022(BaseStrategy):
             # is theory-led (authentic institutional move) and roughly halves the bleed in testing
             # — though no displacement threshold produces robust post-cost edge on its own.
             "displacement_atr_mult": 1.5,
+            # Phase B: the displacement *leg* must be a real impulse — leg span ≥ N×ATR. The disp3+
+            # bucket carried the gross edge (+0.12R) while weaker legs bled. Floor on leg/ATR.
+            "min_disp_strength": 2.5,
             "displacement_lookback": 4,
             "max_setup_bars": 20,
             "target_length": 5,
@@ -81,10 +90,12 @@ class Ict2022(BaseStrategy):
             "sweep_length": [3, 5, 8],
             "mss_length": [2, 3, 5],
             "displacement_atr_mult": [1.5, 1.8, 2.0],
+            "min_disp_strength": [0.0, 2.0, 2.5, 3.0],
             "rr_fallback": [1.5, 2.0, 3.0],
             "target_rr": [None, 1.0, 1.5, 2.0],
             "stop_buffer_atr": [0.0, 0.25, 0.5],
-            "require_daily_bias": [False, True],
+            "killzones": [[("10:00", "11:00")], [("09:50", "11:00")],
+                          [("09:30", "11:30"), ("13:30", "15:30")]],
             "entry_confirm": [False, True],
         }
 
@@ -159,8 +170,21 @@ class Ict2022(BaseStrategy):
         )
         if disp is None:
             return
+        if not self._disp_strong_enough(m5, disp):
+            return
         setup.displacement = disp
         self._state = "armed"
+
+    def _disp_strong_enough(self, m5: pd.DataFrame, disp: Displacement) -> bool:
+        """Require the displacement leg to span at least ``min_disp_strength`` × ATR — a genuine
+        impulse, not a drift. (Phase B: the strong-displacement bucket carried the gross edge.)"""
+        floor = self.params["min_disp_strength"]
+        if not floor:
+            return True
+        atr = classic.atr(m5, self.params["displacement_atr_period"]).iloc[-1]
+        if not pd.notna(atr) or atr <= 0:
+            return True
+        return abs(disp.leg_high - disp.leg_low) / float(atr) >= floor
 
     def _try_entry(self, ctx: MarketContext, m5: pd.DataFrame) -> Optional[Signal]:
         setup = self._setup
@@ -169,6 +193,11 @@ class Ict2022(BaseStrategy):
             return None
         if self._expired():
             self._reset()
+            return None
+
+        # trigger only inside the (narrow) entry window; stay armed and wait otherwise.
+        ekz = self.params["entry_killzones"]
+        if ekz and not in_killzone(ctx.now, ekz):
             return None
 
         direction = setup.direction
