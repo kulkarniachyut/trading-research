@@ -86,12 +86,14 @@ def _ctx(frame, symbol="SPY"):
 def _strategy():
     return Ict2022({
         "killzones": [("09:30", "16:00")],
+        "entry_killzones": None,         # state-machine test: don't gate the trigger to a window
         "require_daily_bias": False,
         "sweep_length": 2,
         "sweep_lookback": 3,
         "mss_length": 2,
         "displacement_atr_period": 3,
         "displacement_atr_mult": 1.0,
+        "min_disp_strength": 0.0,        # this test exercises the state machine, not strength gating
         "displacement_lookback": 4,
         "max_setup_bars": 8,
         "target_length": 2,

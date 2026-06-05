@@ -106,38 +106,68 @@ isolates cost. Result across 2021–2024:
 `tests/test_costs_futures.py`, `scripts/exp_futures.py`. *(Deferred: real MNQ/MES via Databento —
 the RTH proxy is sufficient to reject the cost hypothesis.)*
 
-### Phase B — Time precision & selectivity *(cheap, high-leverage)*
-Replace broad 2-hour killzones with **Silver Bullet** (10–11 ET) and **NY AM Macro** (~9:50–10:10
-ET) windows; tighten setup selectivity (displacement authenticity, single-shot per killzone,
-liquidity-draw targeting). Measure edge (reach-1R, expectancy) not just PnL.
-*Touches:* `src/strategies/common.py` (time windows), `ict_2022/_strategy.py`.
+### Phase B — Time precision & selectivity — ✅ DONE (verdict: necessary but **not** sufficient)
+Split the killzone into a broad **formation window** (`killzones`) and a narrow **entry/trigger
+window** (`entry_killzones`, default Silver Bullet 10–11 ET); added a displacement-leg strength floor
+(`min_disp_strength`, default 2.5×ATR). Edge-pocket diagnostics (`scripts/diag_edge_pockets.py`,
+SPY+QQQ 2021–24, gross R) found the edge **concentrated** where ICT theory says: Silver-Bullet entries
+**+0.22R**, strong displacement **+0.12R**, vs ~flat overall. (Distrusted as anti-doctrine artifacts:
+"counter-bias beats aligned" — our `daily_bias` is a weak proxy; not built on.)
+**But** the selective config still ran **net-negative** on SPY/QQQ (180→61 trades, bleed cut ~40%,
+not flipped) — even the best single-symbol window can't reach positive after realistic fills.
+**Verdict → the reframe below.**
+*Done:* `ict_2022/_strategy.py` (formation/entry split, `min_disp_strength`), `scripts/diag_edge_pockets.py`,
+`scripts/exp_phaseb.py`.
 
-### Phase C — SMT divergence *(architectural)*
-Extend the engine so `MarketContext` can expose a **correlated reference symbol** (NQ↔ES or
-QQQ↔SPY). Implement an **SMT divergence** primitive (one index sweeps a liquidity level, the
-correlated one does not) and wire it as a confluence filter/trigger.
-*Touches:* `src/backtest/clock.py` + `engine.py` (multi-symbol context), `src/core/types.py`
-(`MarketContext.ref(symbol)`), new `ict_2022/_smt.py`.
+## 5a. The reframe — frequency via **breadth**, not narrower tuning
+A system that trades ~2×/year is worse than buy-and-hold. The target is **a few trades/week
+(~100–150/yr), net positive**, "find the day's A+ setup, take it, flat by EOD, move on." That
+reconciles with selectivity only one way:
 
-### Phase D — News/Events + Macro regime *(the expanded Step 2.8)*
-Country-grouped economic calendar (causal schedule-vs-result) **+** macro-regime gate (VIX/DXY/JPY
-risk-off detector). ICT consumes both as filter (stand down near releases / risk-off) and catalyst
-(post-news sweep). Builds on `docs/COMPONENT_DESIGN.md §9`.
-*Touches:* `src/events/` (new), `MarketContext.events_within()/recent_news()`, regime helper.
+> **Frequency comes from BREADTH (a universe of instruments × the full session), not from loosening
+> quality.** Each instrument yields a handful of A+ setups; a portfolio of them yields a few/week.
 
-### Phase E — Honest validation *(Step 3)*
-Walk-forward + Monte Carlo + overfit/cost guards on the upgraded multi-instrument model, against the
-**reserved 2025 + 2026 holdout** (2021/22/24 are now burned as OOS). Accept or reject on
-OOS post-cost expectancy with a trade-count floor and a cost-fragility check.
-*Touches:* `src/validation/` (new).
+**Breadth is also the anti-overfit defense.** A rule fit to one symbol's history is overfit; the
+*same fixed, theory-driven rule* (killzone times from market sessions, OTE fibs, displacement
+authenticity — not optimized numbers) working across 15–20 independent instruments is robust.
+Breadth turns 16 noisy trades into 100+/yr, making walk-forward meaningful. **No parameter
+grid-search on the burned years** — edge is validated cross-sectionally + on the reserved holdout.
+*Honest expectation:* a robust **positive-expectancy-after-cost** edge that repeats, **not** a "100%
+dependable" signal (which can't exist — it would be arbitraged away).
+
+**Crypto is a free gift here:** Alpaca crypto is **24/7**, so it actually exercises the ICT
+session/killzone thesis (London/Asia) that RTH equities can't — at $0.
+
+### Revised sequence (scaffold the full system, measure each layer, then the definitive breadth run)
+- **Phase B.5 — Multi-symbol portfolio foundation** *(the spine; prerequisite for SMT + breadth +
+  meaningful validation).* A universe scanner + portfolio runner that sweeps many symbols, builds
+  per-symbol `MarketContext` from one shared clock, takes the day's qualifying setups (flat by EOD),
+  and aggregates trades/week + portfolio expectancy + heat. Establish a **breadth baseline** on free
+  data: ~15–20 US equities/ETFs **+ liquid crypto (24/7)**.
+  *Touches:* `src/backtest/portfolio.py` (new runner), `src/core/types.py` (`MarketContext.ref(symbol)`),
+  `config/settings.yaml` (universe), reuse the engine per symbol.
+- **Phase C — SMT divergence** *(toggle, measured).* On the multi-symbol engine: one instrument sweeps
+  a liquidity level while its correlate (NQ↔ES, QQQ↔SPY, BTC↔ETH) does not. Measure marginal lift on
+  the breadth baseline. *Touches:* `MarketContext.ref()`, new `ict_2022/_smt.py`.
+- **Phase D — News/Events + Macro regime** *(toggle, measured).* Country-grouped economic calendar
+  (causal schedule-vs-result) **+** macro-regime gate (VIX/DXY/JPY risk-off, the yen-carry case). ICT
+  uses them as filter / catalyst / regime. Measure marginal lift. *Touches:* `src/events/` (new),
+  `MarketContext.events_within()/recent_news()`. Builds on `COMPONENT_DESIGN.md §9`.
+- **Definitive breadth run + Phase E validation.** Full setup across all tickers/markets, **last 4–5
+  yrs**, portfolio walk-forward + Monte Carlo + overfit/cost guards, judged on the **reserved
+  2025–2026 holdout**. Accept/reject on OOS post-cost portfolio expectancy with a trade-count floor
+  and cost-fragility check. *Touches:* `src/validation/` (new).
 
 ---
 
 ## 6. Open decisions / risks
-- **Databento signup** required to get real futures data (else stay on SPY/QQQ proxy). Free credits
-  should cover historical OHLCV backtesting comfortably.
-- **Multi-symbol engine (Phase C)** is the one real architectural change; everything before it is
-  single-symbol-compatible.
-- **Overfitting discipline:** 2021/22/24 are burned; only 2025+2026 remain clean. Phases A–D form
-  hypotheses on mechanism (not PnL grid-search); Phase E is the one clean final test.
+- **Data staging:** free now = US equities + **crypto (24/7)**; **Databento futures** (23h micros) and
+  **India** equities come later (cost model already country-grouped; data providers seal behind one file).
+- **Multi-symbol engine (Phase B.5)** is the one real architectural change; it unlocks SMT, breadth,
+  and meaningful validation together.
+- **Overfitting discipline:** 2021/22/24 burned; only **2025+2026** remain clean. Rules are fixed &
+  theory-driven and validated **cross-sectionally** (consistency across the universe) + OOS — never by
+  grid-search on history. Each scaffolding layer (SMT, news, regime) is a measurable toggle.
+- **Per-layer attribution:** build C and D as toggles with a cheap breadth re-check at each milestone,
+  so the definitive run's number is attributable, not a black box.
 - Robinhood futures = **no options on futures, no ag/rates** — fine, we only need index micros.
