@@ -164,10 +164,11 @@ class BacktestEngine:
         res = self.cost_model.apply(fc)
         exit_fill = res.fill_price
 
-        gross = (ref_price - pos.entry_ref) * pos.qty * pos.dir            # frictionless
-        net = (exit_fill - pos.entry_fill) * pos.qty * pos.dir - pos.entry_cash - res.cash_cost
+        mult = self.instrument.multiplier                                  # 1 for equities; point value for futures
+        gross = (ref_price - pos.entry_ref) * pos.qty * pos.dir * mult      # frictionless
+        net = (exit_fill - pos.entry_fill) * pos.qty * pos.dir * mult - pos.entry_cash - res.cash_cost
         costs = gross - net
-        notional = pos.entry_fill * pos.qty * self.instrument.multiplier
+        notional = pos.entry_fill * pos.qty * mult
         return Trade(
             symbol=self.instrument.symbol, side=pos.side, entry_ts=pos.entry_ts, exit_ts=now,
             entry_px=pos.entry_fill, exit_px=exit_fill, qty=pos.qty,
