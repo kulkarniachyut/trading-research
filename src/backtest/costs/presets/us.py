@@ -6,6 +6,7 @@ from src.backtest.costs.components import (
     AtrSlippage,
     BpsSpread,
     PerUnitCommission,
+    TickSpread,
     UsRegFees,
 )
 from src.backtest.costs.core import CostModel
@@ -39,8 +40,22 @@ def us_equity_options(*args, **kwargs) -> CostModel:  # extension point
     )
 
 
-def us_futures(*args, **kwargs) -> CostModel:  # extension point
-    raise NotImplementedError(
-        "US futures costs not built yet — use PerUnitCommission (per contract), TickSpread, "
-        "exchange+NFA fees, and the contract point value as InstrumentSpec.multiplier."
+def us_futures(
+    half_spread_ticks: float = 0.5,      # micros quote ~1 tick wide; half-spread per side
+    slippage_atr_mult: float = 0.05,
+    slippage_stress: float = 1.0,
+    broker_commission: float = 0.0,      # Robinhood futures: $0 broker commission
+    exchange_fee: float = 0.37,          # CME micro exchange + clearing + NFA, per contract per side
+) -> CostModel:
+    """US index-futures micros (MES/MNQ…). P&L scales by the contract point value, carried on
+    ``InstrumentSpec.multiplier`` (MES $5/pt, MNQ $2/pt) — see ``src/backtest/instruments.py``.
+    Costs: tick-wide spread + volatility slippage (PRICE), $0 broker commission, and the
+    per-contract CME+NFA fee (CASH). Defaults model Robinhood micros; everything is overridable."""
+    return CostModel(
+        [
+            TickSpread(half_spread_ticks),
+            AtrSlippage(slippage_atr_mult, stress=slippage_stress),
+            PerUnitCommission(broker_commission, name="commission"),
+            PerUnitCommission(exchange_fee, name="exchange_fee"),
+        ]
     )

@@ -89,14 +89,22 @@ to confirm on real **MNQ/MES** with the full 23h session before trusting any ses
 
 ## 5. Phased plan — built **A → B → C → D → E, in order**
 
-### Phase A — Instrument & cost reality *(foundational)*
-Add a **futures asset class** to the cost model (tick size, point multiplier, CME per-contract fee;
-e.g. MNQ = $2/pt, MES = $5/pt) and a futures `InstrumentSpec`. Re-run `ict_2022` with futures
-economics. **Hypothesis under test:** higher R / lower relative cost flips the marginal edge from
-net-negative toward viable. First on SPY/QQQ-as-proxy with the futures cost model; then on real
-MNQ/MES via the new futures data provider.
-*Touches:* `src/backtest/costs.py`, `src/core/types.py` (InstrumentSpec/asset class), a futures
-`DataProvider` (`src/data/`), `config/settings.yaml` (universe).
+### Phase A — Instrument & cost reality *(foundational)* — ✅ DONE (verdict: cost ≠ the problem)
+Added a **futures asset class** (`us_futures()` cost preset: tick spread + ATR slippage + $0 broker
+commission + per-contract CME/NFA fee, ~$2.24 round-turn/MNQ) and a CME micro registry
+(`src/backtest/instruments.py`: MES/MNQ/M2K/MYM/MGC, point value + tick + ETF→index proxy factor).
+Fixed a latent simulator P&L bug (gross/net now scale by `InstrumentSpec.multiplier`).
+**Hypothesis test** (`scripts/exp_futures.py`): `ict_2022` is scale-invariant, so rescaling the
+SPY/QQQ RTH proxy into index-point space with **matched leverage** fires identical trades →
+isolates cost. Result across 2021–2024:
+- Futures economics **roughly halve cost** (equity $14,651 → futures $8,163, −44%). ✅
+- But **gross P&L is −$3,997 before any cost** — the directional edge is negative, not marginally
+  positive. Cheaper costs cut the loss (−18,649 → −13,160) but cannot flip it. ❌
+- **Conclusion:** the problem is the **signal**, not the instrument. Futures is carried forward as
+  the cheaper *execution* vehicle; edge must come from Phase B (selectivity) + Phase C (SMT).
+*Done:* `src/backtest/costs/presets/us.py`, `src/backtest/instruments.py`, `src/backtest/simulator.py`,
+`tests/test_costs_futures.py`, `scripts/exp_futures.py`. *(Deferred: real MNQ/MES via Databento —
+the RTH proxy is sufficient to reject the cost hypothesis.)*
 
 ### Phase B — Time precision & selectivity *(cheap, high-leverage)*
 Replace broad 2-hour killzones with **Silver Bullet** (10–11 ET) and **NY AM Macro** (~9:50–10:10
