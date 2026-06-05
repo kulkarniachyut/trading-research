@@ -198,3 +198,15 @@ class MarketContext(ABC):
         import pandas as pd
 
         return pd.DataFrame()
+
+    # --- Phase D: events/regime side-channel (optional; default no-op) -----
+
+    def regime(self) -> Optional[str]:
+        """Macro risk regime as of ``now`` (e.g. "risk_on"/"risk_off"), or None if not wired.
+        Causal: built from data available before ``now`` (see ``src/events/regime.py``)."""
+        return None
+
+    def is_news_day(self) -> bool:
+        """Whether ``now`` falls on a high-impact scheduled-news day (FOMC/CPI/NFP…). False if no
+        calendar is wired. The *schedule* is public ahead of time, so this is forward-safe."""
+        return False

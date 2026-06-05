@@ -117,6 +117,8 @@ def run_portfolio(
     provider,
     crypto_provider=None,
     references: Optional[dict[str, str]] = None,
+    regime_series=None,
+    news_calendar=None,
     base_tf: TimeFrame = TimeFrame.M5,
     initial_equity: float = 100_000.0,
     risk_pct: float = 0.005,
@@ -145,7 +147,8 @@ def run_portfolio(
             ref_sym = references.get(item.symbol)
             ref_bars = src.get_bars(ref_sym, base_tf, start, end) if ref_sym else None
             eng = _engine_for(item, initial_equity, risk_pct, max_leverage)
-            results[item.symbol] = eng.run(make_strategy(), bars, base_tf, reference_bars=ref_bars)
+            results[item.symbol] = eng.run(make_strategy(), bars, base_tf, reference_bars=ref_bars,
+                                           regime_series=regime_series, news_calendar=news_calendar)
         except Exception as exc:  # noqa: BLE001 — one bad symbol must not kill the sweep
             errors[item.symbol] = f"{type(exc).__name__}: {exc}"
     return PortfolioResult(results=results, start=start, end=end, initial_equity=initial_equity,
