@@ -257,17 +257,36 @@ def inducement_taken(bars: pd.DataFrame, direction: int, minor_length: int = 2, 
 
 
 def daily_bias(htf_bars: pd.DataFrame, length: int = 5) -> int:
-    """HTF directional bias (+1/-1/0) from structure: latest close breaking the most recent
-    confirmed swing high (up) or low (down)."""
+    """HTF directional bias (+1/-1/0) as *persistent* market structure: carry the last
+    break-of-structure forward. A close above the most-recent confirmed swing high flips bias
+    bullish and a close below the most-recent confirmed swing low flips it bearish; the bias holds
+    until the opposite side breaks. (An instantaneous "is *this* bar breaking" read is 0 almost
+    always, so it can't function as a trend filter — this is the textbook SMC structure state.)
+
+    Causal: confirmed swing levels are already lagged ``length`` bars, and each bar only consults
+    swings confirmed at or before it.
+    """
     highs, lows = swing_levels(htf_bars, length)
-    close = float(htf_bars["close"].iloc[-1])
-    up = len(highs) > 0 and close > float(highs.iloc[-1])
-    dn = len(lows) > 0 and close < float(lows.iloc[-1])
-    if up and not dn:
-        return 1
-    if dn and not up:
-        return -1
-    return 0
+    if not len(highs) and not len(lows):
+        return 0
+    hvals = list(highs.items())  # (confirmation_ts, level), ascending
+    lvals = list(lows.items())
+    hi_i = lo_i = 0
+    last_hi: Optional[float] = None
+    last_lo: Optional[float] = None
+    bias = 0
+    for ts, close in htf_bars["close"].items():
+        while hi_i < len(hvals) and hvals[hi_i][0] <= ts:
+            last_hi = float(hvals[hi_i][1])
+            hi_i += 1
+        while lo_i < len(lvals) and lvals[lo_i][0] <= ts:
+            last_lo = float(lvals[lo_i][1])
+            lo_i += 1
+        if last_hi is not None and close > last_hi:
+            bias = 1
+        elif last_lo is not None and close < last_lo:
+            bias = -1
+    return bias
 
 
 def daily_bias_context(htf_bars: pd.DataFrame, length: int = 5, price: Optional[float] = None) -> DailyBiasContext:

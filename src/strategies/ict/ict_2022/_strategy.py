@@ -47,38 +47,56 @@ class Ict2022(BaseStrategy):
     def default_params(cls) -> dict:
         return {
             "killzones": [("09:30", "11:30"), ("13:30", "15:30")],
-            "require_daily_bias": True,
+            # Daily bias is an ICT-correct *filter* but a strict structural gate kills almost all
+            # setups; default off (a tunable to A/B in validation), like SMT will be.
+            "require_daily_bias": False,
             "require_daily_pd_alignment": False,
             "require_inducement": False,
+            "entry_require_fvg": False,    # OTE entry by default; FVG overlap = optional confluence
+            "entry_confirm": False,        # require a confirmation close in-trade-direction (no knife-catch)
             "use_ifvg_confluence": False,
             "use_breaker_confluence": False,
             "daily_length": 5,
             "sweep_length": 5,
             "sweep_lookback": 3,
-            "mss_length": 5,
+            "mss_length": 3,               # MSS is a *micro* structure break, not a major swing
             "displacement_atr_period": 14,
+            # A real displacement is a *clearly* above-average impulse; 1.2 ATR admits noise. 1.5
+            # is theory-led (authentic institutional move) and roughly halves the bleed in testing
+            # — though no displacement threshold produces robust post-cost edge on its own.
             "displacement_atr_mult": 1.5,
             "displacement_lookback": 4,
-            "max_setup_bars": 16,
+            "max_setup_bars": 20,
             "target_length": 5,
             "rr_fallback": 2.0,
+            "target_rr": None,             # if set, cap/force the target at this RR (exit mgmt test)
+            "min_rr": 1.0,                 # ignore liquidity draws closer than 1R; use RR fallback
             "stop_buffer_atr": 0.25,
+            "m5_window": 250,              # only the recent structure matters -> keeps it O(n)
         }
 
     @classmethod
     def param_space(cls) -> dict:
         return {
             "sweep_length": [3, 5, 8],
-            "mss_length": [3, 5, 8],
-            "displacement_atr_mult": [1.0, 1.5, 2.0],
+            "mss_length": [2, 3, 5],
+            "displacement_atr_mult": [1.5, 1.8, 2.0],
             "rr_fallback": [1.5, 2.0, 3.0],
+            "target_rr": [None, 1.0, 1.5, 2.0],
             "stop_buffer_atr": [0.0, 0.25, 0.5],
+            "require_daily_bias": [False, True],
+            "entry_confirm": [False, True],
         }
 
     def on_start(self, ctx: MarketContext) -> None:
+        self._step = 0
         self._reset()
 
     def on_bar(self, ctx: MarketContext) -> Optional[Signal]:
+        # monotonic bar counter — survives windowing (len(m5) is capped, so setup ages
+        # must be measured against an absolute clock, not the window length).
+        self._step = getattr(self, "_step", 0) + 1
+
         if ctx.position.side != "flat":
             self._state = "in_trade"
             return None
@@ -88,7 +106,7 @@ class Ict2022(BaseStrategy):
         if not in_killzone(ctx.now, self.params["killzones"]):
             return None
 
-        m5 = ctx.bars(TimeFrame.M5)
+        m5 = ctx.window(TimeFrame.M5, self.params["m5_window"])
         if len(m5) < self._min_bars():
             return None
 
@@ -119,7 +137,7 @@ class Ict2022(BaseStrategy):
             return
         if self.params["require_inducement"] and not inducement_taken(m5, direction):
             return
-        self._setup = _Setup(direction=direction, sweep=sweep, swept_at=len(m5) - 1)
+        self._setup = _Setup(direction=direction, sweep=sweep, swept_at=self._step)
         self._state = "swept"
 
     def _try_confirm_mss(self, m5: pd.DataFrame) -> None:
@@ -127,7 +145,7 @@ class Ict2022(BaseStrategy):
         if setup is None:
             self._reset()
             return
-        if self._expired(m5):
+        if self._expired():
             self._reset()
             return
         if not structure_shift(m5, setup.direction, length=self.params["mss_length"]):
@@ -149,13 +167,15 @@ class Ict2022(BaseStrategy):
         if setup is None or setup.displacement is None:
             self._reset()
             return None
-        if self._expired(m5):
+        if self._expired():
             self._reset()
             return None
 
         direction = setup.direction
         price = ctx.price
         if not self._price_in_entry_model(price, setup.displacement, direction):
+            return None
+        if self.params["entry_confirm"] and not self._entry_confirmed(m5, direction):
             return None
         if not self._pd_array_confluence(m5, direction, price):
             return None
@@ -197,26 +217,46 @@ class Ict2022(BaseStrategy):
     def _daily_allows(self, ctx: MarketContext, direction: int) -> bool:
         if not self.params["require_daily_bias"]:
             return True
-        d1 = ctx.bars(TimeFrame.D1)
+        d1 = ctx.window(TimeFrame.D1, self.params["daily_length"] * 2 + 20)
         if len(d1) < max(3, self.params["daily_length"] + 2):
-            return False
+            return True  # not enough HTF history to form an opinion -> don't veto
         bias = daily_bias_context(d1, length=self.params["daily_length"], price=ctx.price)
-        if bias.direction != direction:
+        # A bias filter *vetoes* clearly counter-trend trades; a neutral (0) bias has no opinion
+        # and must not block (requiring active confirmation starves the strategy — see diagnostics).
+        if bias.direction != 0 and bias.direction != direction:
             return False
-        if not self.params["require_daily_pd_alignment"]:
+        if not self.params["require_daily_pd_alignment"] or bias.direction == 0:
             return True
         return (direction == 1 and bias.zone == "discount") or (
             direction == -1 and bias.zone == "premium"
         )
 
     def _price_in_entry_model(self, price: float, disp: Displacement, direction: int) -> bool:
-        fvg_low = min(disp.fvg_top, disp.fvg_bottom)
-        fvg_high = max(disp.fvg_top, disp.fvg_bottom)
+        # OTE (62–79% retrace of the displacement leg) is the structural entry. FVG overlap is
+        # confluence: required only when entry_require_fvg is set, otherwise it just narrows it.
         if direction == 1:
             ote_low, ote_high = ote_zone(disp.leg_low, disp.leg_high)
         else:
             ote_low, ote_high = ote_zone(disp.leg_high, disp.leg_low)
-        return fvg_low <= price <= fvg_high and ote_low <= price <= ote_high
+        if not (ote_low <= price <= ote_high):
+            return False
+        if self.params["entry_require_fvg"]:
+            fvg_low = min(disp.fvg_top, disp.fvg_bottom)
+            fvg_high = max(disp.fvg_top, disp.fvg_bottom)
+            return fvg_low <= price <= fvg_high
+        return True
+
+    def _entry_confirmed(self, m5: pd.DataFrame, direction: int) -> bool:
+        """Reject first-touch knife-catching: the latest completed bar must close in the trade
+        direction and in the favorable half of its range (a rejection of the OTE tap)."""
+        bar = m5.iloc[-1]
+        rng = bar["high"] - bar["low"]
+        if rng <= 0:
+            return False
+        close_pos = (bar["close"] - bar["low"]) / rng  # 0 at low … 1 at high
+        if direction == 1:
+            return bar["close"] > bar["open"] and close_pos >= 0.5
+        return bar["close"] < bar["open"] and close_pos <= 0.5
 
     def _pd_array_confluence(self, m5: pd.DataFrame, direction: int, price: float) -> bool:
         if self.params["use_ifvg_confluence"]:
@@ -230,13 +270,23 @@ class Ict2022(BaseStrategy):
         return True
 
     def _target(self, m5: pd.DataFrame, direction: int, price: float, stop: float) -> float:
-        target = draw_on_liquidity(m5, direction, price, length=self.params["target_length"])
-        if direction == 1 and target is not None and target > price:
-            return target
-        if direction == -1 and target is not None and target < price:
-            return target
         risk = abs(price - stop)
-        return price + direction * self.params["rr_fallback"] * risk
+        # a fixed RR target overrides liquidity logic — used to test exit management, since price
+        # reaches ~1R far more often than the ~2.3R a liquidity draw implies (see MFE diagnostics).
+        cap = self.params.get("target_rr")
+        if cap:
+            level = price + direction * cap * risk
+        target = draw_on_liquidity(m5, direction, price, length=self.params["target_length"])
+        # take the real liquidity draw only if it pays at least min_rr; a too-close pool would
+        # book a sub-1R winner that costs eat — fall back to a clean RR target instead.
+        if target is not None and risk > 0:
+            rr = (target - price) / risk if direction == 1 else (price - target) / risk
+            if rr >= self.params["min_rr"]:
+                level_liq = target
+                if cap:  # cap the draw at target_rr so we don't over-reach
+                    level_liq = (min(level, target) if direction == 1 else max(level, target))
+                return level_liq
+        return level if cap else price + direction * self.params["rr_fallback"] * risk
 
     def _signal_meta(self, setup: _Setup) -> dict:
         disp = setup.displacement
@@ -251,8 +301,11 @@ class Ict2022(BaseStrategy):
             "fvg_bottom": disp.fvg_bottom if disp else None,
         }
 
-    def _expired(self, m5: pd.DataFrame) -> bool:
-        return self._setup is not None and len(m5) - self._setup.swept_at > self.params["max_setup_bars"]
+    def _expired(self) -> bool:
+        return (
+            self._setup is not None
+            and self._step - self._setup.swept_at > self.params["max_setup_bars"]
+        )
 
     def _min_bars(self) -> int:
         return max(

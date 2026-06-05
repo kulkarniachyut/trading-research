@@ -41,6 +41,10 @@ self-contained wheel) + smartmoneyconcepts (SMC; numba pinned to a wheel build),
 (dashboard). `pandas-ta` is broken on modern numpy/pandas, so we use TA-Lib instead. Strategies
 import indicators only from the `src/indicators/` packages (`classic`, `vumanchu`, `smc`,
 `common`), never from a TA lib directly.
+Futures (the instrument ICT is built for, per `docs/ICT_RESEARCH_AND_PLAN.md`): historical data via
+**Databento** (CME `GLBX.MDP3`, free signup credits) behind the same `DataProvider` contract, with
+SPY/QQQ (Alpaca IEX) as an RTH proxy fallback; eventual live execution on **Robinhood futures**
+(micros MES/MNQ/M2K/MYM) behind the `Broker` interface. Alpaca paper stays the default broker.
 
 ## Conventions
 - Type hints everywhere; dataclasses for Signal/Trade/Result/Order.
@@ -54,15 +58,26 @@ import indicators only from the `src/indicators/` packages (`classic`, `vumanchu
 - `uv run pytest` — run tests.
 - `uv run ruff check .` — lint.
 
+## Key finding (2026-06-05) — drives the ICT-hardening plan
+Mechanical `ict_2022` (first-touch-OTE) has **no robust post-cost edge** on SPY/QQQ 5m across
+2021–2024 (validated IS=2023 / OOS=2021,22,24 via Alpaca IEX). Directional edge ≈ noise; costs are
+a large fraction of the tight 5m R. Research agrees the SMC framework alone isn't an edge. The fix
+is **more model, not more tuning** — see `docs/ICT_RESEARCH_AND_PLAN.md`. 2021/22/24 are *burned* as
+OOS; **2025 + 2026 are reserved as the clean final holdout** — do not peek during A–D tuning.
+Alpaca keys now live in `.env` and work; IEX 5m reaches back to 2021. Futures data → Databento free
+credits (else SPY/QQQ RTH proxy). Diagnostics in `scripts/diag_*.py` + `scripts/exp_*.py`.
+
 ## Build status (one step at a time, review gate after each)
 - [x] Step 0 — Environment & scaffold (core contracts, BaseStrategy + registry, DataProvider)
 - [x] Step 1 — Data layer (yfinance/Alpaca providers, Parquet cache, tz/look-ahead tests)
-- [~] Step 2 — Vertical slice: indicators (classic/VuManChu/SMC ✓), cost model ✓, MultiTFClock ✓,
-      engine ✓, strategy buckets + `ict_fvg` ✓, flagship `ict_2022` v1 ✓; NEXT: SPY/QQQ
-      validation, then metrics + OOS
-- [ ] Step 2.8 — Events & News layer (country-grouped economic calendar + Alpaca news; causal
-      schedule vs gated results; ICT consumes as filter + news-sweep catalyst)
-- [ ] Step 3 — Validation (walk-forward, Monte Carlo, overfit/cost guards)
+- [x] Step 2 — Vertical slice: indicators ✓, cost model ✓, MultiTFClock ✓, engine ✓, strategy
+      buckets + `ict_fvg` ✓, flagship `ict_2022` v1 ✓, SPY/QQQ multi-regime validation ✓ (→ finding above)
+- [ ] Step 2.7 — **ICT hardening (built A→B→C→D→E, in order; full plan in `docs/ICT_RESEARCH_AND_PLAN.md`)**
+  - [ ] A — Instrument & cost reality: futures asset class + cost model (MES/MNQ micros), re-test economics
+  - [ ] B — Time precision & selectivity: Silver-Bullet / NY-AM-Macro windows, tighter setup selection
+  - [ ] C — SMT divergence: multi-symbol `MarketContext` (NQ↔ES / QQQ↔SPY) + SMT confluence (architectural)
+  - [ ] D — Events/News + macro regime: economic-calendar filter + VIX/DXY/JPY risk-regime gate (the old Step 2.8)
+  - [ ] E — Honest validation: walk-forward + Monte Carlo + overfit/cost guards on the reserved 2025/26 holdout
 - [ ] Step 4 — More strategies (momentum, mean-reversion)
 - [ ] Step 5 — Comparison runner + Streamlit dashboard
 - [ ] Step 6 — Paper execution (Broker, risk layer, paper loop, manual approval)

@@ -8,9 +8,10 @@ The backtester is a truth machine. Execution is the last, smallest piece.
 ## Locked decisions
 | Area | Choice |
 |---|---|
-| Market / broker | US equities, **Alpaca** (free IEX data + paper trading) |
+| Market / broker | US equities + **index-futures micros** (the instrument ICT is built for). Data: **Alpaca** (free IEX equities) + **Databento** (CME futures, free credits) behind one `DataProvider`; SPY/QQQ RTH proxy fallback. Brokers: Alpaca paper (default) → **Robinhood futures** (MES/MNQ/M2K/MYM) for live, behind the `Broker` interface |
 | First strategy | ICT/SMC — `ict_fvg` (simple) + `ict_2022` flagship (full 2022 model); modular buckets |
-| News / events | Country-grouped economic calendar + Alpaca news; schedule forward-safe, results gated to release; ICT uses it as a filter + news-sweep catalyst |
+| ICT direction (2026-06-05) | Mechanical `ict_2022` proved **no post-cost edge** on SPY/QQQ 5m → hardening plan **A→B→C→D→E** (futures economics → time precision → SMT → events/macro-regime → validation). See `ICT_RESEARCH_AND_PLAN.md` |
+| News / events | Two layers: country-grouped **economic calendar** (schedule forward-safe, results gated to release; ICT filter + news-sweep catalyst) **+** cross-market **macro-regime gate** (VIX/DXY/JPY risk-off, e.g. yen-carry unwind) |
 | Backtest engine | **Custom event-driven, native multi-timeframe** (no single-series shortcut) |
 | Signal model | **Event-driven** `on_bar(ctx) -> Signal \| None` — same code path backtest & live |
 | Persistence | Parquet (bars, equity curves) + SQLite (journal, run-metadata, results index) |
