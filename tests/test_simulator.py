@@ -125,3 +125,23 @@ def test_no_trade_without_a_stop():
     data = bars([(100.0, 100.5, 99.5, 100.0)] * 4)
     res = engine().run(NoStop(), data, TimeFrame.M5)
     assert res.trades == []
+
+
+def test_sizing_is_capped_by_max_leverage():
+    # A one-cent stop would risk-size to 50k shares, but 1x notional caps it near 1k shares.
+    data = bars([
+        (100.0, 100.2, 99.8, 100.0),
+        (100.0, 100.2, 99.8, 100.0),
+        (100.0, 101.5, 99.8, 101.0),
+        (101.0, 101.2, 100.8, 101.0),
+    ])
+    eng = BacktestEngine(
+        cost_model("US", "equity"),
+        InstrumentSpec("TEST", Market("US", AssetClass.EQUITY, Product.INTRADAY)),
+        initial_equity=100_000.0,
+        risk_pct=0.005,
+        max_leverage=1.0,
+    )
+    res = eng.run(BuyOnce(stop_off=0.01, tgt_off=1.0), data, TimeFrame.M5)
+    assert len(res.trades) == 1
+    assert res.trades[0].qty == 1000

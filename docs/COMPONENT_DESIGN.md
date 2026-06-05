@@ -22,6 +22,10 @@ The backbone. Every component speaks these; all are fully-typed dataclasses/enum
 - **`MarketContext`**: the per-bar view handed to a strategy. Exposes ONLY completed bars as of
   `now`: `now`, `bars(tf)`, `last(tf)`, `window(tf, n)`, current `price`, `position`, `account`.
   The forming bar and any future bar are physically absent → look-ahead is impossible.
+  - **Phase C (SMT):** gains an optional `ref(symbol, tf)` returning the correlated instrument's
+    completed bars (NQ↔ES / QQQ↔SPY) so the engine can stay single-traded-symbol while a strategy
+    reads a second symbol for SMT divergence. Same completed-bars-only guarantee. (Phase D adds
+    `events_within(td)` / `recent_news()` — see §9.)
 
 ---
 
@@ -82,6 +86,12 @@ Consume feature-augmented bars, emit `Signal`s. The pluggable heart.
   displacement leg) entry → stop beyond the sweep, target the next opposite liquidity pool. Every
   step is a tunable parameter; consumes the events layer (filter near high-impact news; opt-in
   news-sweep catalyst).
+  - **Hardening (2026-06-05 finding):** the mechanical v1 has no post-cost edge on SPY/QQQ 5m
+    (validated IS/OOS). Plan `docs/ICT_RESEARCH_AND_PLAN.md` upgrades it in order — **B:**
+    Silver-Bullet (10–11 ET) / NY-AM-Macro (~9:50–10:10) time windows + tighter selectivity
+    (in `_strategy.py` + `common.py`); **C:** `ict_2022/_smt.py` SMT divergence via
+    `ctx.ref(...)`; **D:** events/macro-regime filter. Already added knobs: `entry_confirm`,
+    `target_rr`, persistent `daily_bias`, windowed inputs + `_step` expiry.
 - *Decision:* event-driven + native multi-TF, no shortcuts. Small state machines reacting to bar
   closes — exactly how they would behave live.
 
@@ -93,6 +103,11 @@ Simulate fills honestly; account for every cent of friction.
 - **`costs.py` — `CostModel`**: `commission(qty, px)`, `spread_cost(px, bps)` (half-spread),
   `slippage(px, atr, volume, qty)`. `apply(fill) -> adjusted_fill, breakdown`. Every fill passes
   through; stress mode = ×2 slippage knob.
+  - **Phase A (ICT hardening):** add a **futures asset class** — per-contract CME fee (not %),
+    tick size + point multiplier (MNQ $2/pt, MES $5/pt), so P&L and cost are computed in
+    contracts/ticks. This is the lever that tests whether higher-R / lower-relative-cost futures
+    flip `ict_2022`'s marginal edge (equity 5m R was too small for costs to clear). Country/asset
+    grouping mirrors the existing equity cost model.
 - **`clock.py` — `MultiTFClock`**: for any LTF `now`, yields the most-recent **completed** bar of
   every higher TF. The engine's no-look-ahead core; what makes multi-TF real during verification.
 - **`engine.py` — `EventDrivenEngine`** (thin custom loop):
@@ -103,6 +118,9 @@ Simulate fills honestly; account for every cent of friction.
   6. record `Trade`s + equity curve → `Result`.
 - *Decision:* custom event-driven, native multi-TF, realistic next-bar fills. Same loop shape the
   live `paper_loop` mirrors. Runner loops per-symbol; cross-symbol heat handled at risk/runner.
+  - **Phase C:** the loop stays single-traded-symbol but the `MultiTFClock` also advances a
+    read-only **reference symbol** aligned to `now`, surfaced via `ctx.ref(symbol, tf)` for SMT
+    divergence — no second order book, no look-ahead (reference exposes completed bars only).
 
 ---
 
@@ -173,6 +191,10 @@ high-impact releases and headlines — without ever leaking the future.
   filter ("is high-impact news within N minutes?"). Its *actual result* is look-ahead until the
   release timestamp → exposed only at/after release. `MarketContext` gains optional
   `events_within(timedelta)` / `recent_news()`; the engine injects the provider.
+- **Macro-regime gate (Phase D, second sub-layer):** distinct from the dated calendar — a
+  cross-market **risk-regime** read (VIX regime, DXY, JPY, rates) that detects risk-on/off shifts
+  like the Aug-2024 **yen-carry unwind**. Built from ordinary bars (no special provider), causal,
+  exposed to `on_bar` as a coarse regime tag the ICT strategy can use to stand down or flip bias.
 - *Decision:* providers sealed behind one file (swappable), country-grouped, cached. The ICT
-  strategy consumes events two ways — **filter** (stand down near releases) and **catalyst**
-  (trade the post-news liquidity sweep).
+  strategy consumes events three ways — **filter** (stand down near releases), **catalyst**
+  (trade the post-news liquidity sweep), and **regime** (risk-off macro gate).
