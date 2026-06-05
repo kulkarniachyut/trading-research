@@ -115,6 +115,7 @@ def run_portfolio(
     end,
     *,
     provider,
+    crypto_provider=None,
     base_tf: TimeFrame = TimeFrame.M5,
     initial_equity: float = 100_000.0,
     risk_pct: float = 0.005,
@@ -123,6 +124,7 @@ def run_portfolio(
     """Run ``make_strategy()`` on every symbol in ``universe`` over ``[start, end]`` and aggregate.
 
     ``make_strategy`` is a *factory* (not an instance) so each symbol gets a clean state machine.
+    Crypto items are fetched via ``crypto_provider`` (24/7, no RTH filter) if given, else ``provider``.
     A per-symbol fetch/run failure is recorded in ``errors`` and skipped, never aborting the sweep.
     """
     start = pd.Timestamp(start)
@@ -131,7 +133,8 @@ def run_portfolio(
     errors: dict[str, str] = {}
     for item in universe:
         try:
-            bars = provider.get_bars(item.symbol, base_tf, start, end)
+            src = crypto_provider if item.asset_class is AssetClass.CRYPTO and crypto_provider else provider
+            bars = src.get_bars(item.symbol, base_tf, start, end)
             if bars is None or bars.empty:
                 errors[item.symbol] = "no bars"
                 continue

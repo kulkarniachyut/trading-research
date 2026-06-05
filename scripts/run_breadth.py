@@ -12,27 +12,32 @@ import sys
 
 import pandas as pd
 
+from src.backtest.costs import AssetClass
 from src.backtest.portfolio import UniverseItem, run_portfolio
 from src.core.types import TimeFrame
 from src.data.alpaca import AlpacaProvider
+from src.data.alpaca_crypto import AlpacaCryptoProvider
 from src.strategies.ict.ict_2022 import Ict2022
 
-UNIVERSE = [
+EQUITIES = [
     "SPY", "QQQ", "IWM", "DIA", "AAPL", "MSFT", "NVDA", "AMZN",
     "META", "GOOGL", "TSLA", "AMD", "NFLX", "JPM", "XLE", "GLD",
 ]
+CRYPTO = ["BTCUSD", "ETHUSD", "LTCUSD", "BCHUSD", "SOLUSD", "AVAXUSD", "LINKUSD", "DOGEUSD"]
 
 
 def main() -> None:
     years = sys.argv[1:] or ["2024"]
     prov = AlpacaProvider()
-    universe = [UniverseItem(s) for s in UNIVERSE]
+    crypto_prov = AlpacaCryptoProvider()
+    universe = ([UniverseItem(s) for s in EQUITIES]
+                + [UniverseItem(s, AssetClass.CRYPTO) for s in CRYPTO])
     for yr in years:
         res = run_portfolio(
             lambda: Ict2022({}), universe,
             pd.Timestamp(f"{yr}-01-01", tz="America/New_York"),
             pd.Timestamp(f"{yr}-12-31", tz="America/New_York"),
-            provider=prov, base_tf=TimeFrame.M5,
+            provider=prov, crypto_provider=crypto_prov, base_tf=TimeFrame.M5,
         )
         print(f"\n=== breadth {yr}: {len(res.results)}/{len(universe)} symbols "
               f"({', '.join(res.errors) or 'no errors'}) ===")
