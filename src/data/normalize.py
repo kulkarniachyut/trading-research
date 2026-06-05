@@ -45,8 +45,13 @@ def normalize_bars(
     *,
     include_forming: bool = False,
     now: Optional[datetime] = None,
+    rth: bool = True,
 ) -> pd.DataFrame:
-    """Turn raw provider bars into the canonical OHLCV DataFrame. See module docstring."""
+    """Turn raw provider bars into the canonical OHLCV DataFrame. See module docstring.
+
+    ``rth=False`` keeps every bar (24/7 markets like crypto/futures); the NYSE RTH filter applies
+    only to US equities. tz, sort/de-dupe, and the forming-bar drop still apply.
+    """
     if raw is None or len(raw) == 0:
         return pd.DataFrame(columns=OHLCV_COLS, index=pd.DatetimeIndex([], tz=NY_TZ))
 
@@ -68,8 +73,8 @@ def normalize_bars(
     df = df.sort_index()
     df = df[~df.index.duplicated(keep="last")]
 
-    # 4. RTH filter (intraday only; daily bars are session-dated).
-    if timeframe is not TimeFrame.D1 and len(df) > 0:
+    # 4. RTH filter (intraday US equities only; daily bars are session-dated, 24/7 markets opt out).
+    if rth and timeframe is not TimeFrame.D1 and len(df) > 0:
         df = df[calendar.rth_mask(df.index).to_numpy()]
 
     # 5. drop the trailing forming bar(s).

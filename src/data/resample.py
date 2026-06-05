@@ -24,13 +24,19 @@ _AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "volume":
 
 
 def _bucket_key(index: pd.DatetimeIndex, target: TimeFrame) -> pd.DatetimeIndex:
-    """The boundary-start label each bar in ``index`` belongs to, for ``target`` (tz preserved)."""
+    """The boundary-start label each bar in ``index`` belongs to, for ``target`` (tz preserved).
+
+    Daily/weekly bucket on the NY *session date* (00:00 is unambiguous). Intraday floors in **UTC**
+    then converts back: a 24/7 instrument has bars inside the DST fall-back hour (e.g. 01:00 ET on
+    2024-11-03, which occurs twice), and flooring those in wall-clock NY raises "cannot infer dst".
+    UTC has no such ambiguity, and since ET is a whole-hour offset the :00 boundaries are identical.
+    """
     if target is TimeFrame.W1:
         # Monday 00:00 of each timestamp's week (tz-safe: stay in the index's tz).
         return index.normalize() - pd.to_timedelta(index.weekday, unit="D")
     if target is TimeFrame.D1:
         return index.normalize()
-    return index.floor(target.pandas_freq)
+    return index.tz_convert("UTC").floor(target.pandas_freq).tz_convert(index.tz)
 
 
 def resample_ohlcv(df: pd.DataFrame, target: TimeFrame) -> pd.DataFrame:

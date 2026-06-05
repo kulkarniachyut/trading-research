@@ -39,6 +39,8 @@ class DataProvider(ABC):
 
     #: Short identifier used as the cache namespace, e.g. "yfinance" / "alpaca".
     key: str = "base"
+    #: Whether intraday bars are NYSE-RTH-filtered. False for 24/7 markets (crypto, futures).
+    rth: bool = True
 
     def __init__(self, cache_dir: Optional[str | Path] = None) -> None:
         if cache_dir is None:
@@ -68,14 +70,14 @@ class DataProvider(ABC):
         ):
             raw = self._fetch_raw(symbol, timeframe, gap_start, gap_end)
             # Cache completed bars only (now=None ⇒ drop the forming bar before storing).
-            bars = normalize_bars(raw, timeframe, include_forming=False, now=None)
+            bars = normalize_bars(raw, timeframe, include_forming=False, now=None, rth=self.rth)
             self.cache.write(self.key, symbol, timeframe, bars, gap_start, gap_end)
 
         cached = self.cache.read(self.key, symbol, timeframe, start_ny, end_ny)
         if include_forming:
             # Caller explicitly wants the live edge: re-fetch the tail uncached.
             raw = self._fetch_raw(symbol, timeframe, end_ny - self._lookback(timeframe, 5), end_ny)
-            tail = normalize_bars(raw, timeframe, include_forming=True, now=None)
+            tail = normalize_bars(raw, timeframe, include_forming=True, now=None, rth=self.rth)
             cached = pd.concat([cached, tail])
             cached = cached[~cached.index.duplicated(keep="last")].sort_index()
             cached = cached[(cached.index >= start_ny) & (cached.index <= end_ny)]
@@ -94,7 +96,7 @@ class DataProvider(ABC):
         now = pd.Timestamp.now(tz=NY_TZ)
         start = now - self._lookback(timeframe, n)
         raw = self._fetch_raw(symbol, timeframe, start, now)
-        bars = normalize_bars(raw, timeframe, include_forming=include_forming, now=now)
+        bars = normalize_bars(raw, timeframe, include_forming=include_forming, now=now, rth=self.rth)
         return bars.tail(n)
 
     def subscribe(

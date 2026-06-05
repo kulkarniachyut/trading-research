@@ -50,6 +50,17 @@ def test_h1_rollup_aggregates_constituent_5m_bars():
     assert bar["volume"] == constituents["volume"].sum()    # sum
 
 
+def test_h1_rollup_across_dst_fall_back_is_unambiguous():
+    # 24/7 instruments have bars inside the DST fall-back hour (01:00 ET on 2024-11-03 occurs
+    # twice). Wall-clock flooring raises "cannot infer dst"; the UTC-floor path must not.
+    idx = pd.date_range("2024-11-03 04:00", periods=24, freq="5min", tz="UTC").tz_convert(NY)
+    base = pd.DataFrame({"open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5, "volume": 10.0}, index=idx)
+    h1 = resample_ohlcv(base, TimeFrame.H1)        # must not raise
+    assert len(h1) == 2                            # two distinct real hours (the repeated 01:00 ET)
+    assert h1["volume"].sum() == base["volume"].sum()
+    assert str(h1.index.tz) == NY
+
+
 def test_daily_rollup_one_bar_per_session():
     base = pd.concat([session_5m(d) for d in ("2024-03-11", "2024-03-12", "2024-03-13")])
     d1 = resample_ohlcv(base, TimeFrame.D1)
