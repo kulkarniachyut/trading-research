@@ -61,6 +61,8 @@ class Ict2022(BaseStrategy):
             "require_inducement": False,
             "require_smt": False,          # Phase C: confirm the sweep with SMT divergence vs a correlated ref
             "smt_lookback": 12,
+            "block_risk_off": False,       # Phase D: stand down when the macro regime is risk-off (VIX)
+            "block_news_day": False,       # Phase D: stand down on high-impact news days (FOMC/NFP)
             "entry_require_fvg": False,    # OTE entry by default; FVG overlap = optional confluence
             "entry_confirm": False,        # require a confirmation close in-trade-direction (no knife-catch)
             "use_ifvg_confluence": False,
@@ -119,6 +121,12 @@ class Ict2022(BaseStrategy):
             self._reset()
 
         if not in_killzone(ctx.now, self.params["killzones"]):
+            return None
+
+        # Phase D filters — stand down (no new setups) in risk-off / on high-impact news days.
+        if self.params["block_risk_off"] and ctx.regime() == "risk_off":
+            return None
+        if self.params["block_news_day"] and ctx.is_news_day():
             return None
 
         m5 = ctx.window(TimeFrame.M5, self.params["m5_window"])

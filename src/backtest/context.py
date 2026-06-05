@@ -18,10 +18,13 @@ from src.core.types import Account, MarketContext, Position, TimeFrame
 
 class BacktestContext(MarketContext):
     def __init__(self, clock: MultiTFClock, symbol: str,
-                 ref_clock: MultiTFClock | None = None) -> None:
+                 ref_clock: MultiTFClock | None = None,
+                 regime_series=None, news_calendar=None) -> None:
         self._clock = clock
         self._symbol = symbol
         self._ref_clock = ref_clock
+        self._regime_series = regime_series      # pd.Series of tags, session-dated (Phase D)
+        self._news_calendar = news_calendar      # events.NewsCalendar (Phase D)
         self._now: datetime | None = None
         self._price: float = float("nan")
         self._position = Position(symbol, qty=0.0, avg_px=0.0)
@@ -49,6 +52,18 @@ class BacktestContext(MarketContext):
         if self._ref_clock is None:
             return pd.DataFrame()
         return self._ref_clock.completed(timeframe, self._now)
+
+    def regime(self):
+        """Macro risk regime tag as of ``now`` (session-dated, causal asof). None if not wired."""
+        if self._regime_series is None or len(self._regime_series) == 0:
+            return None
+        val = self._regime_series.asof(self._now)
+        return None if val is None or (isinstance(val, float) and pd.isna(val)) else val
+
+    def is_news_day(self) -> bool:
+        if self._news_calendar is None:
+            return False
+        return self._news_calendar.is_news_day(self._now)
 
     @property
     def price(self) -> float:

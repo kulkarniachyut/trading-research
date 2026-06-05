@@ -81,11 +81,16 @@ credits (else SPY/QQQ RTH proxy). Diagnostics in `scripts/diag_*.py` + `scripts/
     not narrower tuning; breadth is also the anti-overfit defense (cross-sectional consistency, 100+ trades).
     Crypto (Alpaca, 24/7) tests the session thesis for free. Build the full scaffolding, measure each
     layer, THEN one definitive multi-ticker 4–5yr run. (Revised sequence in the plan doc §5a.)
-  - [ ] B.5 — **Multi-symbol portfolio foundation** (the spine): universe scanner + portfolio runner +
-        `MarketContext.ref()`; breadth baseline on ~15–20 US equities/ETFs **+ liquid crypto**
-  - [ ] C — SMT divergence (toggle, measured) on the multi-symbol engine (QQQ↔SPY, BTC↔ETH)
-  - [ ] D — Events/News + macro-regime gate (toggle, measured): economic calendar + VIX/DXY/JPY risk-off
-  - [ ] E — Definitive breadth run + validation: portfolio walk-forward + Monte Carlo on the reserved 2025/26
+  - [x] B.5 — Multi-symbol portfolio foundation ✓ (`run_portfolio`, crypto 24/7 data, DST fix). Verdict:
+        breadth **solves frequency** (3.6/wk equities, 6/wk +crypto) but pooled edge is ~breakeven
+        (+0.01R); crypto-in-NY-window negative (wrong session + %-notional cost). Per-market timeframes deferred.
+  - [x] C — SMT divergence ✓ (`MarketContext.ref()` multi-symbol architecture, `require_smt` toggle).
+        Verdict on 2024 equities: **no marginal lift** (+0.01→+0.02R; diluted by stock↔own-index pairs).
+  - [x] D — Events/News + macro-regime ✓ (VIX `block_risk_off`, FOMC/NFP `block_news_day` toggles).
+        Verdict: both filters **hurt** — the setup is volatility-expansion and *likes* risk-off/news days
+        (use as catalyst, not filter). None of SMT/regime/news lifts the breakeven edge.
+  - [ ] E — **Definitive run**: full setup (toggles) across all tickers/markets, 4–5yr, portfolio
+        walk-forward + Monte Carlo on the reserved **2025/26** holdout. (A–D scaffolding complete; this is the verdict.)
 - [ ] Step 4 — More strategies (momentum, mean-reversion)
 - [ ] Step 5 — Comparison runner + Streamlit dashboard
 - [ ] Step 6 — Paper execution (Broker, risk layer, paper loop, manual approval)
