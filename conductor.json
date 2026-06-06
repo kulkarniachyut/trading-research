@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "./scripts/conductor/setup.sh",
+    "run": "uv run pytest -q && uv run ruff check ."
+  }
+}
