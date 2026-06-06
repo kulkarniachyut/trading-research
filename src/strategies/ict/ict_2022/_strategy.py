@@ -1,7 +1,22 @@
 """State-machine implementation of the flagship ICT 2022 model.
 
-v1 intentionally stays single-symbol because the current engine exposes one traded symbol. SMT,
-partial exits, and news/event filters are follow-on stages after this baseline is measurable.
+The **trigger engine** is unchanged from v1: ``sweep → MSS/displacement → OTE/FVG retrace entry``.
+The redesign (post-68-deck read-through) wraps that trigger in the **narrative layers** the model
+requires — the pieces whose absence left v1 at breakeven (see ``research/ICT_2022_MENTAL_MAP.html``):
+
+  • TIME  (``_time``)  — a **macro-time gate** on entries (00:00/08:30/09:30/10:00/13:30) and a
+    **premium/discount read vs the daily anchor**. ICT's thesis is TIME × PRICE; v1 had only price.
+  • BIAS  (``_bias``)  — **Daily Rebalance Theory**: bias = the *draw on liquidity* (last-3-day FVG /
+    PDH-PDL / purge-&-revert), not a persistent break of structure. Trade only *with* the draw.
+  • REGIME (``_bias``/Phase-D) — stand aside on **consolidation days** (post-outside-day) and at lunch;
+    cap trades/day. News stays a *catalyst* (Phase-D showed filtering on it hurt).
+  • CONFLUENCE (``_smt``/``_pd_arrays``) — timed, biased **SMT**; the **FVG-in-the-right-half-of-the-
+    displacement-leg** quality filter; IFVG/breaker confluence.
+
+Every layer is an **independent toggle**. The defaults encode the *full* ICT setup (so Phase E
+validates the model as ICT teaches it, not a curve-fit subset); each gate can be turned off to ablate
+its contribution on the reserved 2025/26 holdout. Single-symbol per instance (the engine traded
+symbol); breadth/SMT come from the portfolio runner + ``ctx.ref``.
 """
 
 from __future__ import annotations
@@ -14,7 +29,8 @@ import pandas as pd
 from src.core.types import MarketContext, Signal, TimeFrame
 from src.indicators import classic
 from src.strategies.base import BaseStrategy, register_strategy
-from src.strategies.common import in_killzone
+from src.strategies.common import NY_TZ, in_killzone
+from src.strategies.ict.ict_2022._bias import DailyDraw, daily_rebalance, is_consolidation_day
 from src.strategies.ict.ict_2022._model import (
     Displacement,
     Sweep,
@@ -28,6 +44,15 @@ from src.strategies.ict.ict_2022._model import (
 )
 from src.strategies.ict.ict_2022._pd_arrays import breaker_level, inverse_fvgs
 from src.strategies.ict.ict_2022._smt import smt_divergence
+from src.strategies.ict.ict_2022._time import (
+    DEFAULT_MACRO_WINDOWS,
+    anchor_allows,
+    at_macro_time,
+    session_anchor,
+)
+
+# NY lunch — no new setups (Ep5). Kept as a constant so the gate reads clearly.
+_LUNCH = [("12:00", "13:00")]
 
 
 @dataclass(slots=True)
@@ -35,84 +60,104 @@ class _Setup:
     direction: int
     sweep: Sweep
     swept_at: int
+    swept_ts: object = None          # ctx.now at the sweep (the manipulation's macro-time stamp)
+    daily_draw: Optional[DailyDraw] = None
     displacement: Optional[Displacement] = None
 
 
 @register_strategy("ict_2022")
 class Ict2022(BaseStrategy):
-    """Liquidity sweep -> MSS/displacement -> OTE/FVG retrace entry."""
+    """Daily-narrative-gated liquidity sweep → MSS/displacement → OTE/FVG entry."""
 
     required_timeframes = [TimeFrame.M5, TimeFrame.M15, TimeFrame.H1, TimeFrame.D1]
 
     @classmethod
     def default_params(cls) -> dict:
         return {
-            # Phase B: edge-pocket diagnostics (scripts/diag_edge_pockets.py) showed gross edge is
-            # concentrated in trades that *enter* in the **Silver Bullet hour (10–11 ET)** (+0.22R)
-            # while the broad killzone is noise. The setup may *form* earlier in the AM, so the
-            # formation window (`killzones`) is broad and only the *entry* is gated to the Silver
-            # Bullet via `entry_killzones`. (Gating the whole machine to 10–11 over-restricts —
-            # the sweep/MSS can't form in time — which is why a single window starves it.)
-            "killzones": [("09:30", "11:00")],
-            "entry_killzones": [("10:00", "11:00")],   # trigger only here; None = same as killzones
-            # Daily bias gating did NOT help (aligned trades were gross-negative); leave off.
-            "require_daily_bias": False,
-            "require_daily_pd_alignment": False,
-            "require_inducement": False,
-            "require_smt": False,          # Phase C: confirm the sweep with SMT divergence vs a correlated ref
+            # --- formation / entry timing ----------------------------------
+            # `killzones` = broad *formation* window (the sweep/MSS may build across the AM/PM).
+            # Entry *timing* is gated separately: by `macro_windows` when `macro_time_gate` is on
+            # (ICT's TIME×PRICE — entries only at the macro times), else by `entry_killzones`.
+            "killzones": [("09:30", "11:30"), ("13:30", "15:30")],
+            "entry_killzones": None,                 # used only when macro_time_gate is False
+            "macro_time_gate": True,                 # Tier 1: gate entries to the macro windows
+            "macro_windows": DEFAULT_MACRO_WINDOWS,
+            # --- Tier 1: narrative gates -----------------------------------
+            "require_rebalance_bias": True,          # trade only with the Daily Rebalance draw
+            # Anchor premium/discount is a *narrative conviction* read (the "heavy discount" A+ zone),
+            # NOT a hard veto: ICT's super-bullish days trade above the anchor (Ep19/Ep22), and the OTE
+            # entry already enforces discount/premium *of the displacement leg*. So this defaults OFF
+            # (a faithful default) and stays an opt-in Phase-E ablation toggle.
+            "require_anchor_pd": False,              # buys in discount / sells in premium of the anchor
+            "target_rebalance_draw": True,           # consider the daily draw as a target candidate
+            "rebalance_lookback": 3,                 # the "last 3 days" of Daily Rebalance Theory
+            # --- Tier 2: regime / session discipline -----------------------
+            "skip_consolidation_day": True,          # stand aside the day after an outside day (Ep32)
+            "no_trade_lunch": True,                  # no new setups 12:00–13:00 (Ep5)
+            "max_trades_per_day": 4,                 # ICT's ~4/day (2 AM, 2 PM); 0/None = unlimited
+            # --- Tier 3: confluence ----------------------------------------
+            "require_fvg_in_disp_half": True,        # FVG must sit in the favorable half of the leg (Ep29)
+            "require_smt": False,                    # timed, biased SMT vs ctx.ref (needs a reference)
             "smt_lookback": 12,
-            "block_risk_off": False,       # Phase D: stand down when the macro regime is risk-off (VIX)
-            "block_news_day": False,       # Phase D: stand down on high-impact news days (FOMC/NFP)
-            "entry_require_fvg": False,    # OTE entry by default; FVG overlap = optional confluence
-            "entry_confirm": False,        # require a confirmation close in-trade-direction (no knife-catch)
             "use_ifvg_confluence": False,
             "use_breaker_confluence": False,
+            # --- legacy bias toggle (superseded by require_rebalance_bias) --
+            "require_daily_bias": False,             # persistent-BOS bias (the old, weaker read)
+            "require_daily_pd_alignment": False,
+            "require_inducement": False,
+            # --- Phase-D macro filters (catalyst, not filter → default off) -
+            "block_risk_off": False,
+            "block_news_day": False,
+            # --- entry model ----------------------------------------------
+            "entry_require_fvg": False,              # OTE entry by default; FVG overlap = confluence
+            "entry_confirm": False,                  # require an in-direction confirmation close
+            # --- trigger tuning (theory-led; not fit to the test set) ------
             "daily_length": 5,
             "sweep_length": 5,
             "sweep_lookback": 3,
-            "mss_length": 3,               # MSS is a *micro* structure break, not a major swing
+            "mss_length": 3,
             "displacement_atr_period": 14,
-            # A real displacement is a *clearly* above-average impulse; 1.2 ATR admits noise. 1.5
-            # is theory-led (authentic institutional move) and roughly halves the bleed in testing
-            # — though no displacement threshold produces robust post-cost edge on its own.
             "displacement_atr_mult": 1.5,
-            # Phase B: the displacement *leg* must be a real impulse — leg span ≥ N×ATR. The disp3+
-            # bucket carried the gross edge (+0.12R) while weaker legs bled. Floor on leg/ATR.
             "min_disp_strength": 2.5,
             "displacement_lookback": 4,
             "max_setup_bars": 20,
             "target_length": 5,
             "rr_fallback": 2.0,
-            "target_rr": None,             # if set, cap/force the target at this RR (exit mgmt test)
-            "min_rr": 1.0,                 # ignore liquidity draws closer than 1R; use RR fallback
+            "target_rr": None,
+            "min_rr": 1.0,
             "stop_buffer_atr": 0.25,
-            "m5_window": 250,              # only the recent structure matters -> keeps it O(n)
+            "m5_window": 250,
         }
 
     @classmethod
     def param_space(cls) -> dict:
         return {
+            # ablations for Phase E: each narrative gate on/off, plus the trigger knobs.
+            "macro_time_gate": [False, True],
+            "require_rebalance_bias": [False, True],
+            "require_anchor_pd": [False, True],
+            "skip_consolidation_day": [False, True],
+            "require_fvg_in_disp_half": [False, True],
+            "require_smt": [False, True],
             "sweep_length": [3, 5, 8],
             "mss_length": [2, 3, 5],
             "displacement_atr_mult": [1.5, 1.8, 2.0],
             "min_disp_strength": [0.0, 2.0, 2.5, 3.0],
             "rr_fallback": [1.5, 2.0, 3.0],
-            "target_rr": [None, 1.0, 1.5, 2.0],
             "stop_buffer_atr": [0.0, 0.25, 0.5],
-            "killzones": [[("10:00", "11:00")], [("09:50", "11:00")],
-                          [("09:30", "11:30"), ("13:30", "15:30")]],
-            "entry_confirm": [False, True],
-            "require_smt": [False, True],
         }
 
     def on_start(self, ctx: MarketContext) -> None:
         self._step = 0
+        self._day = None
+        self._day_trades = 0
         self._reset()
 
     def on_bar(self, ctx: MarketContext) -> Optional[Signal]:
         # monotonic bar counter — survives windowing (len(m5) is capped, so setup ages
         # must be measured against an absolute clock, not the window length).
         self._step = getattr(self, "_step", 0) + 1
+        self._roll_day(ctx)
 
         if ctx.position.side != "flat":
             self._state = "in_trade"
@@ -122,11 +167,19 @@ class Ict2022(BaseStrategy):
 
         if not in_killzone(ctx.now, self.params["killzones"]):
             return None
+        if self.params["no_trade_lunch"] and in_killzone(ctx.now, _LUNCH):
+            return None
+        if self._day_trade_limit_hit():
+            return None
 
-        # Phase D filters — stand down (no new setups) in risk-off / on high-impact news days.
+        # Phase-D macro filters (default off — news is a catalyst, not a filter).
         if self.params["block_risk_off"] and ctx.regime() == "risk_off":
             return None
         if self.params["block_news_day"] and ctx.is_news_day():
+            return None
+
+        # Tier 2 regime: stand aside on a consolidation day (post-outside-day) for the expansion model.
+        if self.params["skip_consolidation_day"] and self._is_consolidation_day(ctx):
             return None
 
         m5 = ctx.window(TimeFrame.M5, self.params["m5_window"])
@@ -140,6 +193,18 @@ class Ict2022(BaseStrategy):
         if self._state == "armed":
             return self._try_entry(ctx, m5)
         return None
+
+    # --- per-day bookkeeping ------------------------------------------------
+
+    def _roll_day(self, ctx: MarketContext) -> None:
+        day = pd.Timestamp(ctx.now).tz_convert(NY_TZ).normalize()
+        if day != getattr(self, "_day", None):
+            self._day = day
+            self._day_trades = 0
+
+    def _day_trade_limit_hit(self) -> bool:
+        cap = self.params["max_trades_per_day"]
+        return bool(cap) and self._day_trades >= cap
 
     # --- state transitions -------------------------------------------------
 
@@ -156,15 +221,24 @@ class Ict2022(BaseStrategy):
         if sweep is None:
             return
         direction = 1 if sweep.side == "sellside" else -1
-        if not self._daily_allows(ctx, direction):
+
+        draw = self._daily_draw(ctx)
+        if not self._bias_allows(direction, draw):
+            return
+        if not self._daily_allows(ctx, direction):       # legacy persistent-BOS gate (default off)
             return
         if self.params["require_inducement"] and not inducement_taken(m5, direction):
             return
-        if self.params["require_smt"] and not smt_divergence(
-            m5, ctx.ref(TimeFrame.M5), direction, lookback=self.params["smt_lookback"]
-        ):
-            return
-        self._setup = _Setup(direction=direction, sweep=sweep, swept_at=self._step)
+        # Timed, biased SMT (Ep35): only meaningful at a macro time and in the bias direction.
+        if self.params["require_smt"]:
+            if not at_macro_time(ctx.now, self.params["macro_windows"]):
+                return
+            if not smt_divergence(
+                m5, ctx.ref(TimeFrame.M5), direction, lookback=self.params["smt_lookback"]
+            ):
+                return
+
+        self._setup = _Setup(direction=direction, sweep=sweep, swept_at=self._step, daily_draw=draw)
         self._state = "swept"
 
     def _try_confirm_mss(self, m5: pd.DataFrame) -> None:
@@ -188,6 +262,8 @@ class Ict2022(BaseStrategy):
             return
         if not self._disp_strong_enough(m5, disp):
             return
+        if not self._fvg_in_displacement_half(disp, setup.direction):
+            return
         setup.displacement = disp
         self._state = "armed"
 
@@ -202,6 +278,19 @@ class Ict2022(BaseStrategy):
             return True
         return abs(disp.leg_high - disp.leg_low) / float(atr) >= floor
 
+    def _fvg_in_displacement_half(self, disp: Displacement, direction: int) -> bool:
+        """Ep29 quality filter: the FVG must sit in the **favorable half** of the displacement leg —
+        the upper half for longs, the lower half for shorts. (A gap that formed against the leg's
+        thrust is low quality.) Off ⇒ always True."""
+        if not self.params["require_fvg_in_disp_half"]:
+            return True
+        span = disp.leg_high - disp.leg_low
+        if span <= 0:
+            return True
+        mid = disp.leg_low + 0.5 * span
+        fvg_mid = (disp.fvg_top + disp.fvg_bottom) / 2.0
+        return fvg_mid >= mid if direction == 1 else fvg_mid <= mid
+
     def _try_entry(self, ctx: MarketContext, m5: pd.DataFrame) -> Optional[Signal]:
         setup = self._setup
         if setup is None or setup.displacement is None:
@@ -210,14 +299,13 @@ class Ict2022(BaseStrategy):
         if self._expired():
             self._reset()
             return None
-
-        # trigger only inside the (narrow) entry window; stay armed and wait otherwise.
-        ekz = self.params["entry_killzones"]
-        if ekz and not in_killzone(ctx.now, ekz):
+        if not self._entry_time_allows(ctx):
             return None
 
         direction = setup.direction
         price = ctx.price
+        if self.params["require_anchor_pd"] and not anchor_allows(price, session_anchor(m5), direction):
+            return None
         if not self._price_in_entry_model(price, setup.displacement, direction):
             return None
         if self.params["entry_confirm"] and not self._entry_confirmed(m5, direction):
@@ -230,44 +318,64 @@ class Ict2022(BaseStrategy):
             stop = setup.sweep.extreme - buf
             if stop >= price:
                 return None
-            target = self._target(m5, direction, price, stop)
-            signal = Signal(
-                ctx.now,
-                ctx.position.symbol,
-                "long",
-                stop=stop,
-                target=target,
-                reason="ict_2022_long",
-                meta=self._signal_meta(setup),
-            )
+            side = "long"
         else:
             stop = setup.sweep.extreme + buf
             if stop <= price:
                 return None
-            target = self._target(m5, direction, price, stop)
-            signal = Signal(
-                ctx.now,
-                ctx.position.symbol,
-                "short",
-                stop=stop,
-                target=target,
-                reason="ict_2022_short",
-                meta=self._signal_meta(setup),
-            )
+            side = "short"
+        target = self._target(m5, setup, direction, price, stop)
+        signal = Signal(
+            ctx.now,
+            ctx.position.symbol,
+            side,
+            stop=stop,
+            target=target,
+            reason=f"ict_2022_{side}",
+            meta=self._signal_meta(setup),
+        )
+        self._day_trades += 1
         self._state = "in_trade"
         return signal
 
     # --- filters / signal pieces ------------------------------------------
 
+    def _entry_time_allows(self, ctx: MarketContext) -> bool:
+        """Entry timing gate. With ``macro_time_gate`` (the redesign default) entries fire only in
+        the macro windows (TIME×PRICE); otherwise fall back to the ``entry_killzones`` window."""
+        if self.params["macro_time_gate"]:
+            return at_macro_time(ctx.now, self.params["macro_windows"])
+        ekz = self.params["entry_killzones"]
+        return in_killzone(ctx.now, ekz) if ekz else True
+
+    def _daily_draw(self, ctx: MarketContext) -> Optional[DailyDraw]:
+        d1 = ctx.window(TimeFrame.D1, self.params["daily_length"] * 2 + 20)
+        if len(d1) < 4:
+            return DailyDraw(0, None, "none")
+        return daily_rebalance(d1, ctx.price, lookback=self.params["rebalance_lookback"])
+
+    def _bias_allows(self, direction: int, draw: Optional[DailyDraw]) -> bool:
+        """Daily-Rebalance bias gate: trade only *with* the draw. A neutral (0) draw means "no
+        confident bias" — stand aside when the gate is required (Ep19's "no bias ⇒ gambling")."""
+        if not self.params["require_rebalance_bias"]:
+            return True
+        if draw is None or draw.direction == 0:
+            return False
+        return draw.direction == direction
+
+    def _is_consolidation_day(self, ctx: MarketContext) -> bool:
+        d1 = ctx.window(TimeFrame.D1, self.params["daily_length"] * 2 + 20)
+        return is_consolidation_day(d1)
+
     def _daily_allows(self, ctx: MarketContext, direction: int) -> bool:
+        """Legacy persistent-BOS bias veto (default off; superseded by the Daily Rebalance gate).
+        Kept so Phase E can A/B the old read against the new one."""
         if not self.params["require_daily_bias"]:
             return True
         d1 = ctx.window(TimeFrame.D1, self.params["daily_length"] * 2 + 20)
         if len(d1) < max(3, self.params["daily_length"] + 2):
-            return True  # not enough HTF history to form an opinion -> don't veto
+            return True
         bias = daily_bias_context(d1, length=self.params["daily_length"], price=ctx.price)
-        # A bias filter *vetoes* clearly counter-trend trades; a neutral (0) bias has no opinion
-        # and must not block (requiring active confirmation starves the strategy — see diagnostics).
         if bias.direction != 0 and bias.direction != direction:
             return False
         if not self.params["require_daily_pd_alignment"] or bias.direction == 0:
@@ -314,27 +422,40 @@ class Ict2022(BaseStrategy):
                 return False
         return True
 
-    def _target(self, m5: pd.DataFrame, direction: int, price: float, stop: float) -> float:
+    def _target(self, m5: pd.DataFrame, setup: _Setup, direction: int, price: float, stop: float) -> float:
+        """Target the **nearest opposite pool that pays at least ``min_rr``**, choosing between the
+        intraday liquidity draw and (when ``target_rebalance_draw``) the Daily-Rebalance draw — so we
+        aim at a real level without over-reaching. Falls back to a clean RR target otherwise."""
         risk = abs(price - stop)
-        # a fixed RR target overrides liquidity logic — used to test exit management, since price
-        # reaches ~1R far more often than the ~2.3R a liquidity draw implies (see MFE diagnostics).
         cap = self.params.get("target_rr")
-        if cap:
-            level = price + direction * cap * risk
-        target = draw_on_liquidity(m5, direction, price, length=self.params["target_length"])
-        # take the real liquidity draw only if it pays at least min_rr; a too-close pool would
-        # book a sub-1R winner that costs eat — fall back to a clean RR target instead.
-        if target is not None and risk > 0:
-            rr = (target - price) / risk if direction == 1 else (price - target) / risk
-            if rr >= self.params["min_rr"]:
-                level_liq = target
-                if cap:  # cap the draw at target_rr so we don't over-reach
-                    level_liq = (min(level, target) if direction == 1 else max(level, target))
-                return level_liq
-        return level if cap else price + direction * self.params["rr_fallback"] * risk
+        capped = price + direction * cap * risk if cap else None
+
+        candidates: list[float] = []
+        intraday = draw_on_liquidity(m5, direction, price, length=self.params["target_length"])
+        if intraday is not None:
+            candidates.append(intraday)
+        if self.params["target_rebalance_draw"] and setup.daily_draw and setup.daily_draw.draw is not None:
+            candidates.append(setup.daily_draw.draw)
+
+        # keep only pools beyond price in the trade direction that clear min_rr
+        valid = []
+        for lvl in candidates:
+            if risk <= 0:
+                break
+            beyond = lvl > price if direction == 1 else lvl < price
+            rr = (lvl - price) / risk if direction == 1 else (price - lvl) / risk
+            if beyond and rr >= self.params["min_rr"]:
+                valid.append(lvl)
+        if valid:
+            level = min(valid) if direction == 1 else max(valid)   # nearest qualifying pool
+            if capped is not None:  # don't over-reach past the RR cap
+                level = min(level, capped) if direction == 1 else max(level, capped)
+            return level
+        return capped if capped is not None else price + direction * self.params["rr_fallback"] * risk
 
     def _signal_meta(self, setup: _Setup) -> dict:
         disp = setup.displacement
+        draw = setup.daily_draw
         return {
             "model": "ict_2022",
             "state": "armed",
@@ -344,6 +465,8 @@ class Ict2022(BaseStrategy):
             "sweep_extreme": setup.sweep.extreme,
             "fvg_top": disp.fvg_top if disp else None,
             "fvg_bottom": disp.fvg_bottom if disp else None,
+            "draw_basis": draw.basis if draw else None,
+            "draw_level": draw.draw if draw else None,
         }
 
     def _expired(self) -> bool:

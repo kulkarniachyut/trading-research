@@ -87,6 +87,15 @@ def _strategy():
     return Ict2022({
         "killzones": [("09:30", "16:00")],
         "entry_killzones": None,         # state-machine test: don't gate the trigger to a window
+        # this test exercises the trigger mechanics in isolation — disable the narrative layers.
+        "macro_time_gate": False,
+        "require_rebalance_bias": False,
+        "require_anchor_pd": False,
+        "skip_consolidation_day": False,
+        "no_trade_lunch": False,
+        "require_fvg_in_disp_half": False,
+        "target_rebalance_draw": False,
+        "max_trades_per_day": 0,
         "require_daily_bias": False,
         "sweep_length": 2,
         "sweep_lookback": 3,

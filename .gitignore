@@ -23,3 +23,6 @@ config/secrets.yaml
 
 # Notebooks
 .ipynb_checkpoints/
+
+# Codegraph index (local code-intelligence artifacts, regenerable)
+.codegraph/
