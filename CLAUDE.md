@@ -53,6 +53,12 @@ SPY/QQQ (Alpaca IEX) as an RTH proxy fallback; eventual live execution on **Robi
 - Tests for every indicator (causality) and the cost model.
 - Persistence: Parquet for bars/equity curves, SQLite for journal/run-metadata/results index.
 
+## Agent model selection
+Default subagents to haiku. Upgrade only when the task requires judgment:
+- haiku: file reads, grep/search, data gathering, counting, formatting, test runs
+- sonnet: code generation, analysis, debugging, architecture decisions
+- opus: cross-cutting synthesis, novel debugging across many files
+
 ## Commands
 - `uv sync` — install deps. `uv sync --extra dev` — include test/lint tooling.
 - `uv run pytest` — run tests.
@@ -66,6 +72,14 @@ is **more model, not more tuning** — see `docs/ICT_RESEARCH_AND_PLAN.md`. 2021
 OOS; **2025 + 2026 are reserved as the clean final holdout** — do not peek during A–D tuning.
 Alpaca keys now live in `.env` and work; IEX 5m reaches back to 2021. Futures data → Databento free
 credits (else SPY/QQQ RTH proxy). Diagnostics in `scripts/diag_*.py` + `scripts/exp_*.py`.
+
+## Compact instructions
+When compacting, always preserve:
+- Current build step number and what's blocking it
+- Any failing tests or open errors
+- The last 2–3 architectural decisions made
+- Hard rules summary: no look-ahead, cost model required, OOS/IS split, causal indicators only
+- Active strategy bucket under investigation and its validation status
 
 ## Build status (one step at a time, review gate after each)
 - [x] Step 0 — Environment & scaffold (core contracts, BaseStrategy + registry, DataProvider)
