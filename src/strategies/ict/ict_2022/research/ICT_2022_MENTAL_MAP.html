@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICT 2022 — Mental Map (complete engineering synthesis)</title>
+<style>
+  :root { --ink:#1a1a2e; --muted:#5a6275; --line:#e3e6ee; --bg:#fbfcff;
+          --good:#127a3d; --bad:#b00020; --warn:#a06a00; --accent:#2a4d8f; --soft:#eef2fb; }
+  * { box-sizing: border-box; }
+  body { font: 16px/1.62 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); background: var(--bg); max-width: 980px; margin: 0 auto; padding: 32px 22px 90px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  h2 { font-size: 1.4rem; margin: 44px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); color: var(--accent); }
+  h3 { font-size: 1.1rem; margin: 26px 0 6px; color:#22305c; }
+  h4 { font-size: 0.98rem; margin: 16px 0 4px; color:#33405e; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .lead { background:#fff; border:1px solid var(--line); border-left:4px solid var(--accent);
+          border-radius:8px; padding:14px 18px; margin:18px 0; }
+  .lead.bad { border-left-color:var(--bad); } .lead.good { border-left-color:var(--good); } .lead.warn { border-left-color:var(--warn); }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  code { background:#eef1f7; padding:1px 5px; border-radius:4px; font-size:0.85em; }
+  .good { color: var(--good); font-weight:600; } .bad { color: var(--bad); font-weight:600; } .warn { color: var(--warn); font-weight:600; }
+  ul, ol { margin: 6px 0 10px; } li { margin: 4px 0; }
+  .pill { display:inline-block; font-size:0.72rem; padding:1px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
+  .ep { display:inline-block; font-size:0.7rem; padding:0 6px; border-radius:4px; background:#f0ead8; color:#6b5b1f; border:1px solid #e4d9b5; white-space:nowrap; }
+  .layers > li { margin: 10px 0; }
+  .toc { columns: 2; font-size: 0.92rem; } .toc a { color: var(--accent); text-decoration: none; } .toc li{ break-inside: avoid; }
+  .box { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin:14px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; } @media(max-width:720px){ .grid2{grid-template-columns:1fr;} .toc{columns:1;} }
+  .step { background:var(--soft); border-radius:6px; padding:2px 7px; font-weight:600; font-size:0.85em; margin-right:4px; }
+  footer { margin-top: 46px; color: var(--muted); font-size: 0.85rem; border-top:1px solid var(--line); padding-top:14px; }
+  .kbd { font-size:0.8rem; color:var(--muted); }
+  hr.soft { border:none; border-top:1px dashed var(--line); margin:18px 0; }
+</style>
+</head>
+<body>
+
+<h1>ICT 2022 — Mental Map</h1>
+<p class="sub">A complete, standalone synthesis of the 2022 ICT Mentorship (68 decks) — readable without the codebase.
+It explains the <i>whole</i> model end to end, then maps each concept to the <code>ict_2022</code> implementation.
+Per-deck notes live in <code>DECK_NOTES.md</code>; the read status + 12-rule shortlist in <code>LEARNING_TRACKER.md</code>.
+<span class="ep">EpN</span> / <span class="ep">CS</span> tags point at the source deck (Episode N / a Case-Study deck).</p>
+
+<div class="lead">
+<b>One sentence.</b> Price is delivered by an <b>algorithm</b> that, at <b>specific times of day</b>, runs <b>liquidity</b>
+(stops) on one side of a level and then <b>expands to the opposite pool</b> — so an edge exists only where a
+<b>price array</b> (FVG / order block / old level) is reached <b>at a key time</b>, <b>in the direction of the daily
+draw on liquidity</b>. Everything below is the machinery for finding that one alignment.</div>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#thesis">1. The core thesis (time × price)</a></li>
+  <li><a href="#layers">2. The four nested layers</a></li>
+  <li><a href="#time">3. TIME — anchors, sessions, macro times</a></li>
+  <li><a href="#bias">4. NARRATIVE / BIAS — draw on liquidity &amp; Daily Rebalance Theory</a></li>
+  <li><a href="#setup">5. THE SETUP — the entry sequence</a></li>
+  <li><a href="#arrays">6. PD ARRAYS &amp; TARGETS</a></li>
+  <li><a href="#structure">7. The market-structure engine (LTH/ITH/STH)</a></li>
+  <li><a href="#daytypes">8. Day types &amp; regimes</a></li>
+  <li><a href="#news">9. News &amp; events (catalyst, not filter)</a></li>
+  <li><a href="#risk">10. Risk &amp; trade management</a></li>
+  <li><a href="#standaside">11. Low-probability / stand-aside conditions</a></li>
+  <li><a href="#examples">12. Two worked examples (buy day / sell day)</a></li>
+  <li><a href="#rules">13. The 12 codeable rules</a></li>
+  <li><a href="#gap">14. Our code vs. the model + the redesign (Tier 1→3)</a></li>
+  <li><a href="#glossary">15. Glossary</a></li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="thesis">1. The core thesis — time × price</h2>
+<div class="lead">
+<b>"Algorithmic theory is based on TIME and PRICE. Price levels are useless until time is considered; time is useless
+unless price is at a key PD array. Blending the two yields astonishing precision."</b> <span class="ep">Ep39</span></div>
+<p>ICT's central claim: there is <b>no buying/selling pressure</b> in the retail sense — <b>price is delivered by an
+algorithm</b> that seeks liquidity and rebalances inefficiencies. <span class="ep">Ep39</span> The algorithm does not
+know how much volume sits above an old high or below an old low; it simply <b>reaches for the pools</b> (resting stop
+orders) and fills institutional interest at <b>price arrays</b> it left behind (FVGs, order blocks). Two consequences
+drive everything:</p>
+<ul>
+  <li><b>Liquidity is the magnet.</b> Stops cluster above highs (buy-side, <b>BSL</b>) and below lows (sell-side,
+      <b>SSL</b>), and at equal highs/lows (engineered liquidity). Price is <i>drawn</i> toward the obvious pool — the
+      <b>draw on liquidity</b>. After repeatedly seeking one side, the algo eventually seeks the other. <span class="ep">Ep39</span></li>
+  <li><b>Time gates the move.</b> A price level only matters at certain <b>macro times</b> (the session opens / news
+      embargo). The same FVG is tradeable at 10:00 and meaningless at 11:40. This is <i>the</i> reason a context-free
+      pattern detector fails: it has the price half and none of the time half.</li>
+</ul>
+
+<h3>Power of 3 / AMD — the anatomy of every candle</h3>
+<p>Each timeframe's candle (daily especially) is built in three phases, fractally: <span class="ep">CS</span> <span class="ep">Ep9</span></p>
+<table>
+<tr><th>Phase</th><th>What happens</th><th>Where in the day (daily candle)</th></tr>
+<tr><td><b>Accumulation</b></td><td>Consolidation near the open; positions built quietly.</td><td>Around the Midnight-NY open / pre-market.</td></tr>
+<tr><td><b>Manipulation</b> (Judas swing)</td><td>A <i>fake</i> move that grabs liquidity on the <b>wrong</b> side (runs stops), trapping retail.</td><td>The 08:30 / 09:30 push — the "Judas swing".</td></tr>
+<tr><td><b>Distribution</b></td><td>The real expansion to the <b>draw on liquidity</b> (the opposite pool).</td><td>NY AM into PM; the trend leg.</td></tr>
+</table>
+<p>So a bullish day typically <b>dips below the open first</b> (manipulation = grab sell-stops in "discount"), then
+expands up to buy-side liquidity. The trader's job: identify the manipulation, then ride the distribution. The three
+session anchors that each start their own Power-of-3 are <b>00:00 (whole day)</b>, <b>08:30 (AM)</b>, <b>13:30 (PM)</b>.
+<span class="ep">Ep11</span></p>
+
+<!-- ============================================================ -->
+<h2 id="layers">2. The four nested layers</h2>
+<p>The model is a funnel. A trade needs <b>all four</b> to align; we historically built only #3.</p>
+<ol class="layers">
+  <li><b>TIME</b> — <i>when</i> the algo acts (anchors, sessions, macro times). §3</li>
+  <li><b>NARRATIVE / BIAS</b> — <i>where price will reach for</i> (the draw on liquidity; daily-rebalance bias; premium/discount). §4</li>
+  <li><b>THE SETUP</b> — the LTF trigger: <i>sweep → MSS → displacement/FVG → entry</i>. §5 <span class="pill">we had this</span></li>
+  <li><b>ARRAYS &amp; TARGETS</b> — the PD arrays you enter on and the draw you exit into. §6</li>
+</ol>
+<div class="lead bad"><b>The gap that explained our breakeven result.</b> The old <code>ict_2022</code> fired
+sweep→MSS→FVG <i>anywhere</i> in a killzone — no daily narrative, no anchor, no draw, no enforced premium/discount, no
+macro-time gate. <b>Right trigger, random context.</b> The redesign adds layers 1, 2, and 4 around the existing #3.</div>
+
+<!-- ============================================================ -->
+<h2 id="time">3. TIME — anchors, sessions, macro times</h2>
+
+<h3>The anchors (the daily pivots)</h3>
+<ul>
+  <li><b>Midnight NY Open (MNO, 00:00 ET)</b> — the daily premium/discount pivot. Price above the MNO = premium (look
+      to sell); below = discount (look to buy). The 24-hour cycle starts at midnight NY. <span class="ep">Ep25</span></li>
+  <li><b>08:30 ET</b> — the <b>news embargo</b> and the AM manipulation anchor; the "last-ditch" Power-of-3 anchor. <span class="ep">Ep19</span>
+      At 08:30 on a bullish day, look <i>left</i> at the swing lows: the algo wants to <b>absorb sell-stops</b> there,
+      then pair that with bias and trade into an FVG/OB. <span class="ep">Ep19</span></li>
+  <li><b>09:30 ET</b> — the equities cash open; <b>behaves like the 08:30 anchor</b> for index/stock RTH. (For our
+      RTH-only equity data, 09:30 <i>is</i> the session anchor; for 24/7 crypto/futures the true MNO/08:30 exist.)</li>
+  <li><b>13:30 ET</b> — the PM-session anchor (its own Power-of-3). <span class="ep">Ep11</span></li>
+</ul>
+<div class="box"><b>Anchor selection rule</b> <span class="ep">Ep17</span> <span class="ep">Ep19</span>: pick the anchor that is still
+"in play" vs price. If (bullish) the MNO is <i>lower</i> than where price trades around 08:30, the MNO is likely not a
+factor → <b>use the 08:30 open</b>. If on a bullish day price is <b>still below the MNO after 08:30</b>, you are in a
+<b>heavy discount</b> (a prime long location). Mirror for bearish. Code: <code>anchor = MNO if still-in-play else 0830</code>;
+<code>price below both ⇒ heavy-discount long</code>.</div>
+
+<h3>Sessions &amp; killzones</h3>
+<table>
+<tr><th>Session</th><th>NY time</th><th>Role</th></tr>
+<tr><td>Asia</td><td>19:00–21:00 (prev. day 19:30 "algo start")</td><td>Accumulation; range often swept later. <span class="ep">Ep3</span></td></tr>
+<tr><td>London open</td><td>02:00–05:00</td><td>First killzone; runs Asia liquidity. (Forex emphasis.) <span class="ep">Ep20</span></td></tr>
+<tr><td><b>NY AM</b></td><td><b>08:30–11:00</b></td><td>The primary equity/index killzone; manipulation off 08:30/09:30.</td></tr>
+<tr><td><b>Silver Bullet</b></td><td><b>10:00–11:00</b></td><td>The highest-probability entry hour (our Phase-B data agreed: gross edge concentrates here).</td></tr>
+<tr><td>London close</td><td>10:00–12:00</td><td>Often a reversal of the daily range.</td></tr>
+<tr><td><b>Lunch</b></td><td><b>12:00–13:00</b></td><td class="bad"><b>No-trade.</b> Consolidation; its high/low becomes a PM liquidity reference. <span class="ep">Ep5</span></td></tr>
+<tr><td><b>NY PM</b></td><td><b>13:30–16:00</b></td><td>Second killzone; PM expansion / Fed-volatility window. MOC orders ~15:00. <span class="ep">Ep30</span> <span class="ep">Ep32</span></td></tr>
+</table>
+<ul>
+  <li><b>Macro times (when SMT &amp; entries are valid):</b> <b>02:00, 08:30, 09:30, 10:00, 13:30</b>. SMT divergence
+      <i>forms</i> at these times and is "only useful if you have a bias". <span class="ep">Ep35</span> This is the literal
+      time-gate the old code lacked.</li>
+  <li><b>"Unwillingness to trade before 10:00"</b> — be cautious entering before 10:00; let the AM manipulation resolve. <span class="ep">Ep33</span></li>
+  <li><b>~4 trades/day max</b> (≈2 AM, 2 PM); the setup is fractal across sessions. <span class="ep">CS</span></li>
+</ul>
+
+<h3>The nested time hierarchy <span class="ep">Ep39</span></h3>
+<p>Time context is layered, each level narrowing when to expect expansion:
+<b>time of day → day of week → week of month → month of year → seasonal tendency.</b></p>
+<ul>
+  <li><b>Day of week:</b> mid-week often carries the weekly expansion; Mondays accumulate.</li>
+  <li><b>Week of month (NFP):</b> the <b>first week</b> contains NFP → ICT likes to be <b>done by Wednesday 08:30</b>. <span class="ep">Ep36</span> <span class="ep">Ep37</span></li>
+  <li><b>Pre-FOMC-speak day</b> is usually a <b>narrow-range</b> day. <span class="ep">Ep29</span> (Forward-safe: the schedule is public.)</li>
+  <li><b>Seasonal:</b> e.g. May tends to be a declining month for indices. <span class="ep">Ep25</span></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="bias">4. NARRATIVE / BIAS — the draw on liquidity</h2>
+<div class="lead"><b>Bias is "where will price <i>reach for</i>", not "where will it close."</b> Every-day perfect bias is
+unrealistic; think in terms of the <b>weekly expansion target</b> (a 3–5 day horizon). Without a confident HTF bias you
+are <b>gambling</b> — and "if you can't determine an HTF bias, you won't recognize a stop raid." <span class="ep">Ep19</span> <span class="ep">Ep39</span>
+<b>Stand-aside is a first-class output</b>, not a failure.</div>
+
+<h3>4a. Draw on liquidity — the targets</h3>
+<p>The draw is the <b>obvious pool</b> price is reaching for: <b>PDH/PDL</b> (prev-day high/low), <b>PWH/PWL</b>
+(prev-week), <b>old highs/lows</b>, and <b>equal highs/lows</b> (engineered liquidity — "the market does not like to
+leave relative equal highs; it runs through them later"). <span class="ep">Ep20</span> <span class="ep">Ep13</span> Prefer
+<b>unmitigated</b> draws: target a level <i>where something was respected</i>, not one whose stops were already taken
+(a prior SSL purge). <span class="ep">Ep22</span></p>
+
+<h3 id="rebalance">4b. Daily Rebalance Theory — the bias engine we were missing <span class="ep">Ep25</span></h3>
+<div class="box">
+<p>The cleanest, most testable bias/draw algorithm in the entire mentorship. When a <b>major high/low is taken on the
+weekly/daily</b>, study the <b>last 3 days</b>:</p>
+<ol>
+  <li><b>Is there a daily FVG (imbalance) in the last 3 days?</b>
+    <ul>
+      <li><b>Yes</b> → the draw is to <b>rebalance that FVG</b> (price returns to fill the gap). Direction = toward the gap.</li>
+      <li><b>No</b> → use <b>PDH/PDL</b> and rebalance the <b>previous day's down/up move</b>.</li>
+    </ul></li>
+  <li><b>Purge &amp; revert:</b> after a major <b>SSL purge</b> (sweep of sell-side), revert to the <b>high of the past
+      3 days</b> (the purge day counts as day 1). Mirror for a BSL purge. <span class="ep">Ep19</span> <span class="ep">Ep25</span></li>
+  <li><b>Validate the liquidity sequence:</b> it matters <b>which side is taken first</b>. If bearish, you must see
+      <b>BSL taken first</b> (the manipulation up) — otherwise the idea is invalidated and you may actually be bullish. <span class="ep">Ep25</span></li>
+  <li><b>Dealing-range EQ reaction:</b> if the daily dealing range touches its <b>50% (equilibrium)</b>, expect the next
+      day to react off it. Dealing range = the <b>most recent, most energetic</b> low↔high. <span class="ep">Ep19</span></li>
+</ol>
+</div>
+<p>Simple corollary draws: "if the market takes out a <b>daily low</b> and creates a <b>swing low</b>, it likely wants
+the <b>recent high</b>" (and mirror). <span class="ep">Ep37</span></p>
+
+<h3>4c. Premium / discount (location filter)</h3>
+<ul>
+  <li><b>vs the anchor:</b> above the MNO/08:30/09:30 open = <b>premium</b> (sell zone); below = <b>discount</b> (buy zone). <span class="ep">Ep38</span></li>
+  <li><b>vs the dealing range:</b> above 50% of swing-high→swing-low = premium; below = discount; 50% = equilibrium.</li>
+  <li><b>Short-term arrays</b> <span class="ep">Ep22</span>: trading <i>above an old high</i> = a short-term premium array;
+      <i>below an old low</i> = discount array. But price <b>need not pull back</b> — it can stay overbought and keep
+      going. Premium/discount is a <b>contextual gate that must agree with the narrative</b>, not a mechanical reversal trigger.</li>
+  <li><b>Multi-stage delivery</b> <span class="ep">Ep35</span>: when a leg delivers in two pushes, anchor premium/discount
+      on the <b>most recent</b> sub-leg.</li>
+  <li><b>Rule:</b> buys only in discount, sells only in premium; <b>target the opposite</b> (buy discount → premium draw).</li>
+</ul>
+
+<h3>4d. Inter-market / DXY</h3>
+<p><b>DXY</b> (US Dollar Index) on the 1H = a risk-on/off and bias tool: when everything declines and DXY (safe haven)
+rises = <b>risk-off</b>; DXY is inversely correlated to indices. Use DXY for EUR/USD &amp; GBP/USD bias too. <span class="ep">Ep21</span> <span class="ep">Ep20</span>
+(In our system this is approximated by the <code>regime()</code> VIX tag.)</p>
+
+<!-- ============================================================ -->
+<h2 id="setup">5. THE SETUP — the entry sequence</h2>
+<p>The trigger, in order. Each step has a precise rule; the redesign keeps this engine and gates it with §3–§4.</p>
+
+<h4><span class="step">1</span> Time &amp; narrative are set</h4>
+<p>In a killzone, at/after a macro time; HTF bias + draw decided; price in the correct premium/discount location.
+No bias ⇒ no trade. <span class="ep">Ep39</span></p>
+
+<h4><span class="step">2</span> Liquidity sweep (the Judas / manipulation)</h4>
+<p>Price <b>pierces a prior pool but closes back inside</b> it — a stop-hunt (sell-side for buys, buy-side for sells),
+anchored to MNO / 08:30 / 09:30 / session open. A <b>run <i>through</i> with a body close = continuation</b>; a
+<b>wick-take &amp; reject = a sweep (reversal)</b>. <span class="ep">Ep23</span> <span class="ep">Ep33</span> A big run that
+leaves <b>no</b> tradeable FVG/pullback is "just sweeping" → stand aside. <span class="ep">Ep36</span></p>
+
+<h4><span class="step">3</span> Market-Structure Shift (MSS) — only after a sweep</h4>
+<div class="lead warn"><b>Highest-value gating rule.</b> "An MSS happens only when price takes out liquidity." <span class="ep">Ep3</span>
+A structure break <i>without</i> a prior sweep is a mere MSB (continuation), not a shift. A true MSS = <b>sweep +
+displacement</b>: an energetic move that <b>body-closes</b> through the recent swing (a wick is not enough) and
+<b>leaves an FVG</b>. <span class="ep">Ep3</span> <span class="ep">Ep24</span></div>
+
+<h4><span class="step">4</span> Displacement &amp; the Fair Value Gap</h4>
+<ul>
+  <li><b>Displacement</b> = an "energy move away from the FVG and the high/low it took out." <span class="ep">Ep20</span>
+      No displacement ⇒ no pattern ⇒ no trade. <span class="ep">Ep24</span></li>
+  <li><b>FVG geometry (strict 3-candle)</b> <span class="ep">Ep6</span>: for a <i>bullish</i> FVG, candle-1's high, then a
+      displacement candle-2, then candle-3 whose <b>low &gt; candle-1's high</b> — the gap is candle-1-high → candle-3-low.
+      Confirmed only on the 3rd-candle close. (Bearish mirrors.)</li>
+  <li><b>Quality filters:</b> the FVG should sit <b>above 50% of the displacement leg</b> for buys (below for sells) <span class="ep">Ep29</span>;
+      candle <b>bodies</b> (not just wicks) should respect it <span class="ep">Ep22</span>; an FVG that <b>contains a swing
+      low</b> is higher quality (the swing is both trigger and stop). <span class="ep">Ep9</span></li>
+  <li><b>Invalidation:</b> only a <b>body close</b> through the gap kills it — a wick through is fine. <span class="ep">Ep9</span></li>
+</ul>
+
+<h4><span class="step">5</span> Entry — in the FVG / OTE, in discount/premium</h4>
+<ul>
+  <li>Enter in the <b>FVG</b> and/or the <b>OTE</b> band (<b>0.62–0.79</b> retrace of the displacement leg). <span class="ep">CS</span></li>
+  <li>Must be in <b>discount (buys) / premium (sells)</b> of the dealing range and in the bias direction.</li>
+  <li><b>Stop</b>: just beyond the sweep extreme; on a <b>large imbalance</b>, put the stop at the <b>far edge of that
+      imbalance</b>, not the candle before. <span class="ep">Ep18</span></li>
+  <li><b>Target</b>: the opposite draw (§4a); partial at the first opposing array.</li>
+  <li><b>09:30 "2nd-chance" model</b> <span class="ep">Ep15</span>: if at the open an FVG has a swing low beneath it, that
+      low gets swept (traps early buyers) → <b>buy the <i>original</i> FVG once price reclaims it.</b> If you miss the
+      first entry, re-enter at the <b>next BOS + fresh FVG</b> as long as the R is still worth it. <span class="ep">Ep29</span></li>
+  <li><b>Confirmation TF drill</b> <span class="ep">Ep18</span>: bias on Daily → structure on 1H → <b>15m is the decision
+      ("bellwether") chart</b> → combine 15m + 5m FVGs; ICT also drills 4m/3m/2m/1m for precision and a final 1m MSS confirm.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="arrays">6. PD ARRAYS &amp; TARGETS</h2>
+<p>"PD arrays" = Premium/Discount arrays: the institutional reference levels price is delivered to. Order from the decks,
+high → low timeframe priority.</p>
+
+<h3>Order Block (OB)</h3>
+<ul>
+  <li><b>Definition:</b> "a change in the state of delivery" — the last down-close candle before an up-move (bullish OB),
+      or last up-close before a down-move (bearish OB). <b>Not every down candle is an OB.</b> <span class="ep">Ep13</span></li>
+  <li><b>3-condition validity checklist</b> <span class="ep">Ep13</span> <span class="ep">Ep18</span>: (1) correct up/down-close
+      candle; (2) it <b>created an FVG / imbalance after it</b> (the key test — no imbalance ⇒ not a valid OB);
+      (3) aligned with daily bias.</li>
+  <li><b>Reference &amp; invalidation:</b> use the candle's <b>open</b> and its <b>50% = mean threshold (MT)</b>. A
+      <b>body close through the MT</b> ⇒ the OB fails. Prefer <b>bodies</b> over wicks for the level. <span class="ep">Ep35</span> <span class="ep">Ep17</span></li>
+  <li>HTF OBs are real barriers ("high resistance = the OBs/orderflow that is holding") — don't target through them. <span class="ep">Ep35</span></li>
+</ul>
+
+<h3>Fair Value Gap (FVG) / imbalance</h3>
+<p>See §5 step 4 for geometry, quality, and invalidation. An FVG is also a <b>draw</b> (Daily Rebalance Theory targets
+unfilled gaps) and, once violated, an <b>Inverse FVG</b>.</p>
+
+<h3>Inverse FVG (IFVG) &amp; Breaker</h3>
+<ul>
+  <li><b>IFVG:</b> an FVG price has traded <i>through</i> (a later body close beyond the far side) flips polarity — a
+      violated bullish FVG becomes bearish resistance, and vice-versa.</li>
+  <li><b>Breaker:</b> when structure breaks, the broken swing level flips to S/R. <b>FVG + breaker = "big confluence".</b></li>
+</ul>
+
+<h3>Old high / low (array flip + target)</h3>
+<p>Once price trades <b>through</b> an old high/low it <b>flips</b> the array (an old high becomes a discount array / support
+once reclaimed) and then acts as both <b>S/R and a target</b> — especially when paired with an FVG ("old high + FVG"). <span class="ep">CS</span></p>
+
+<h3>Dealing range &amp; equilibrium</h3>
+<p>Dealing range = the most recent energetic swing-high → swing-low; <b>equilibrium = 50%</b>. Premium above, discount
+below. Fib targeting: anchor LTL→ITH when bearish; <b>−1.5</b> = a one-standard-deviation projection target. In low
+volatility draw the fib on <b>bodies</b>; in heavy news draw it on <b>wicks</b>. <span class="ep">Ep12</span> <span class="ep">Ep23</span></p>
+
+<h3>SMT (Smart Money Technique) — timed, biased confirmation</h3>
+<ul>
+  <li>Compare correlated pairs — <b>ES↔NQ, SPY↔QQQ, BTC↔ETH</b>. Bullish SMT: primary makes a <b>lower low</b> (sweeps
+      SSL) while the correlate makes a <b>higher low</b> (fails to confirm) = accumulation. Bearish mirrors with highs. <span class="ep">Ep7</span></li>
+  <li><b>Not a standalone indicator</b> — it's confirmation / the <i>last</i> confirmation, and <b>only at the macro times
+      (02:00, 08:30, 09:30, 10:00, 13:30) with a bias.</b> <span class="ep">Ep35</span></li>
+  <li><b>It also selects the symbol:</b> when ES↔NQ diverge, trade the <b>stronger</b> (non-confirming) leg — "ICT longed
+      ES because it was stronger." <span class="ep">Ep29</span></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="structure">7. The market-structure engine (precision technicians) <span class="ep">Ep12</span></h2>
+<p>A three-tier swing hierarchy that defines what a "real" break is:</p>
+<ul>
+  <li><b>STH/STL</b> (short-term), <b>ITH/ITL</b> (intermediate), <b>LTH/LTL</b> (long-term, daily-linked).</li>
+  <li>Between two STH sits an <b>ITH</b>; an ITL has a higher STL on each side. Every <b>FVG rebalance promotes</b> a swing
+      to ITH/ITL.</li>
+  <li><b>LTH/LTL should not break</b> against the trend; an <b>ITH/ITL break = a significant MSS</b> — if violated against
+      you, <b>stand aside</b>.</li>
+  <li><b>Strength gauge:</b> if an ITH is <b>not higher</b> than the prior two STH → the market is weak/bearish (mirror for
+      bullish). In bearish conditions, every up-close candle should be respected; a violation is OK only if a STH sits
+      above (a liquidity grab).</li>
+  <li><b>TF nesting:</b> Daily FVG → 1H structure → 15m entries; cap the forecast at a ~5-day horizon.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="daytypes">8. Day types &amp; regimes</h2>
+<table>
+<tr><th>Day type</th><th>Tell</th><th>Play</th></tr>
+<tr><td><b>Trend / expansion day</b></td><td>Clear AM manipulation then displacement toward the draw.</td><td>The core model: sweep→MSS→FVG toward the draw.</td></tr>
+<tr><td><b>Consolidation day</b> <span class="ep">Ep32</span></td><td>Follows an <b>outside day</b>; 50/50 direction.</td><td class="warn"><b>Fade the EQ edges</b> of the daily range; expect a <b>15:00 MOC</b> volatility burst. Don't run the breakout model.</td></tr>
+<tr><td><b>Narrow-range day</b> <span class="ep">Ep29</span></td><td>The <b>day before a Fed-chair speak</b>.</td><td>Smaller targets; lean on SMT; expect compression.</td></tr>
+<tr><td><b>Bullish-day template</b> <span class="ep">Ep38</span></td><td>AM rally → lunch consolidation → PM SSL sweep → rally.</td><td>If no consolidation into lunch &amp; it sweeps SSL into lunch → they'll <b>work through lunch</b> (deviation → re-route PM plan).</td></tr>
+</table>
+<p><b>PM session</b> <span class="ep">Ep30</span> <span class="ep">Ep27</span>: a PM move most likely <b>sweeps the
+lunchtime high/low</b>; if bullish, mark the lunch-consolidation low and trade the <b>break</b> of it. <b>PM reversal
+trigger</b> <span class="ep">Ep38</span>: objective-fail + <b>15m MSS + respected FVG</b> ⇒ flip bias for the PM.</p>
+
+<!-- ============================================================ -->
+<h2 id="news">9. News &amp; events — catalyst, not filter</h2>
+<div class="lead good"><b>News is the <i>alibi</i> for the manipulation, a CATALYST — not something to hide from.</b> ICT trades
+<b>only high/medium-impact days</b>; the morning Judas <i>times off</i> the 08:30 release. <span class="pill">Our Phase-D
+data agreed: the setup is volatility-expansion and <i>likes</i> risk-off / news days</span></div>
+<ul>
+  <li><b>Leg sequence on news days</b> <span class="ep">Ep23</span>: <b>initial leg → another leg → fake-out leg → real
+      setup.</b> Don't take the first displacement; wait for the fake-out to complete (arm later on event days).</li>
+  <li><b>FOMC / NFP:</b> FOMC AM is tradeable but <b>be flat before the release</b>. <span class="ep">Ep15</span> NFP week
+      (first of month): be <b>done by Wednesday 08:30</b>. <span class="ep">Ep37</span> "Not an invitation to trade FOMC" —
+      study, don't reflex-fade. <span class="ep">Ep23</span></li>
+  <li><b>Fib anchoring by volatility:</b> low vol → bodies; heavy news → wicks. <span class="ep">Ep23</span></li>
+  <li><b>Ignore the two big news wicks</b> when reading structure. <span class="ep">CS</span></li>
+  <li><b>Causality (our hard rule):</b> a release <b>schedule</b> is public ahead of time (forward-safe as a filter/regime
+      flag); the <b>actual result</b> is look-ahead until the release timestamp.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="risk">10. Risk &amp; trade management</h2>
+<ul>
+  <li><b>Stop:</b> beyond the sweep extreme / at the far edge of a large imbalance. <span class="ep">Ep18</span> Exits a
+      <b>few ticks before</b> the exact target level (front-run the pool). <span class="ep">Ep17</span></li>
+  <li><b>Trail in stages</b> <span class="ep">Ep41</span> <span class="ep">CS</span>: at <b>50%</b> of the target range →
+      stop to <b>25%</b>; at <b>75%</b> → <b>breakeven</b>. But only go BE <b>after price truly swing-mitigates</b> your
+      entry (not on first touch). <span class="ep">Ep25</span></li>
+  <li><b>Pyramiding</b> <span class="ep">Ep26</span> <span class="ep">CS</span>: add with <b>decreasing</b> risk (1% → 0.5%
+      → 0.25%); stack OBs within one leg.</li>
+  <li><b>Partials</b> at the first opposing array; let a runner reach the full draw.</li>
+  <li><b>Confluence stack (the "golden" setup)</b> <span class="ep">Ep41</span>: <b>FVG + OB + OTE after a short-term MSS.</b></li>
+  <li><b>Mindset:</b> "make trading boring"; don't trade sloppy PA; manage risk; don't touch capital when emotional. <span class="ep">Ep19</span></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="standaside">11. Low-probability / stand-aside conditions <span class="ep">CS</span></h2>
+<ul>
+  <li>No confident HTF bias (gambling). <span class="ep">Ep19</span></li>
+  <li><b>Counter-trend</b> to the daily draw. (Lunch-break counter-trend is a specific exception, §8.)</li>
+  <li><b>Lunch 12:00–13:00.</b></li>
+  <li>A break <b>without</b> a prior sweep (MSB, not MSS); a big run with <b>no</b> FVG (just a sweep). <span class="ep">Ep36</span></li>
+  <li>NFP week after Wed 08:30; London/AM after an FOMC whipsaw; sloppy/consolidation PA when expecting expansion.</li>
+  <li><b>"Setup not forming = a missed move, not a broken model."</b> Do <b>not</b> loosen the displacement requirement to
+      manufacture trades — that is the anti-overfit guardrail. <span class="ep">Ep24</span></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="examples">12. Two worked examples</h2>
+<div class="grid2">
+<div class="box"><h4>Bullish day (buy)</h4>
+<ol>
+  <li>Daily Rebalance + draw point up (e.g. unfilled daily FVG above / PDH as draw); bias = long.</li>
+  <li>Price opens, dips <b>below the MNO/09:30 anchor</b> → <b>heavy discount</b> location.</li>
+  <li>At/after a macro time (08:30→10:00), it <b>sweeps a swing low / SSL</b> (absorbs sell-stops) and closes back up.</li>
+  <li>A 5m/15m <b>MSS</b>: an energetic up-candle <b>body-closes</b> over the recent swing high, leaving a <b>bullish FVG</b>
+      in the upper half of the leg.</li>
+  <li>Price retraces into the <b>FVG/OTE (0.62–0.79)</b>, still in discount; enter long. Stop below the sweep low; target
+      the buy-side draw (PDH / old high / equal highs). SMT (SPY↔QQQ) confirms at the macro time.</li>
+</ol></div>
+<div class="box"><h4>Bearish day (sell)</h4>
+<ol>
+  <li>Daily Rebalance + draw point down (unfilled daily FVG below / PDL); bias = short. Liquidity sequence: <b>BSL taken
+      first</b> confirms bearish.</li>
+  <li>Price opens, rallies <b>above the anchor</b> → <b>premium</b> location (the Judas up).</li>
+  <li>At a macro time it <b>sweeps a swing high / BSL</b> and closes back down.</li>
+  <li>A 5m/15m <b>MSS</b> down: body-close under the recent swing low, leaving a <b>bearish FVG</b> in the lower half of the leg.</li>
+  <li>Retrace into the <b>FVG/OTE</b> in premium; enter short. Stop above the sweep high; target the sell-side draw. SMT confirms.</li>
+</ol></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="rules">13. The 12 codeable rules (the redesign spec)</h2>
+<ol>
+  <li><b>TIME × PRICE gate.</b> A setup fires only when a PD array is reached <b>at a macro time</b> (00:00/08:30/09:30/10:00/13:30). The old model had no time gate — the core fix.</li>
+  <li><b>Bias is a prerequisite; stand-aside is first-class.</b> No confident HTF bias ⇒ no trade. Don't loosen displacement to force trades (anti-overfit).</li>
+  <li><b>Daily Rebalance Theory bias/draw (§4b).</b> Last-3-days FVG ⇒ rebalance it; else PDH/PDL; purge-&-revert; validate liquidity sequence.</li>
+  <li><b>Anchor + heavy-discount read (§3).</b> Pick MNO vs 08:30/09:30 by what's in play; below both = heavy-discount long; needs an LTF MSS to trigger.</li>
+  <li><b>MSS requires a prior sweep + displacement that leaves an FVG.</b> Run-with-FVG = continuation; sweep+reject = reversal; big run no-FVG = stand aside.</li>
+  <li><b>FVG quality is quantifiable.</b> Above/below 50% of the displacement leg; bodies respect it; contains a swing; body-close-through invalidates.</li>
+  <li><b>OB validity = it created an imbalance after it; ref = open + 50% MT.</b> MT body-close-through ⇒ fail.</li>
+  <li><b>Premium/discount is a contextual gate, not a reversal trigger.</b> Target unmitigated draws, not already-swept levels.</li>
+  <li><b>News/regime = catalyst.</b> Initial→another→fake-out→real leg sequence (arm later); pre-FOMC-speak = narrow range; NFP week done by Wed 08:30; fib on wicks in heavy news.</li>
+  <li><b>Day-type regime switch.</b> Outside day ⇒ consolidation ⇒ fade EQ edges + 15:00 MOC; bullish-day template (AM rally→lunch→PM SSL sweep→rally).</li>
+  <li><b>SMT = timed, biased confirmation that selects the symbol.</b> Only at macro times, with a bias; trade the stronger leg.</li>
+  <li><b>Confluence (Tier 3) &amp; risk.</b> "FVG+OB+OTE after a short-term MSS is golden." Trail 50%→25%, 75%→BE (BE only after swing-mitigation).</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="gap">14. Our code vs. the model + the redesign</h2>
+<table>
+<tr><th>Status</th><th>Items</th></tr>
+<tr><td class="good">✅ Have (kept)</td><td>sweep, MSS, displacement, FVG, OTE, premium/discount <i>primitives</i>, OB, breaker, IFVG, inducement, killzone filter, <code>min_disp_strength</code>, SMT primitive, VIX/news toggles, breadth/portfolio runner, futures cost model, crypto 24/7 data.</td></tr>
+<tr><td class="bad">🔴 Was backwards</td><td><b>news as a filter</b> (→ catalyst) · <b>bias = persistent BOS</b> (→ Daily Rebalance draw) · <b>SMT standalone, continuous, stock↔own-index</b> (→ timed, biased, ES↔NQ/SPY↔QQQ) · <b>premium/discount not enforced</b> · <b>no macro-time gate</b>.</td></tr>
+<tr><td class="warn">⛔ Was missing</td><td><b>macro-time × array gate</b> · <b>session anchor + heavy-discount read</b> · <b>Daily Rebalance draw engine</b> · <b>day-type regime (consolidation/narrow-range)</b> · <b>old-high/low array flip as target</b> · <b>mean-threshold OB invalidation</b> · <b>15m bellwether confirm</b> · <b>news leg-sequence timing</b>.</td></tr>
+</table>
+
+<h3>The redesign — Tier 1 → 3 (all toggles; theory-led "full" defaults; validate in Phase E)</h3>
+<p>The trigger engine (§5) is unchanged; we wrap it in the missing layers, each a toggle so Phase E can ablate every one
+on the reserved 2025/26 holdout. <b>Defaults encode the full ICT setup</b> (not a tuned subset) to avoid curve-fitting.</p>
+<div class="grid2">
+<div class="box"><h4>Tier 1 — narrative gates <span class="pill">_time, _bias</span></h4>
+<ol>
+  <li><b>Macro-time gate</b> — entries only at 08:30/09:30/10:00/13:30 windows (the time half of the thesis).</li>
+  <li><b>Session anchor + premium/discount</b> — buys in discount of the anchor (below 09:30/MNO open), sells in premium; heavy-discount read.</li>
+  <li><b>Daily Rebalance bias + draw</b> — direction from last-3-days FVG / PDH-PDL; trade only with the draw; target the draw.</li>
+  <li><b>News as catalyst</b> — prefer high-impact days; arm <i>later</i> in the news leg sequence.</li>
+</ol></div>
+<div class="box"><h4>Tier 2 — the narrative engine <span class="pill">_narrative</span></h4>
+<ol start="5">
+  <li><b>MNO/anchor Power-of-3 day engine</b> — detect the morning Judas vs the anchor as <i>the</i> qualifying sweep.</li>
+  <li><b>Daily-narrative wrapper</b> — take the sweep→MSS→FVG trigger only when bias + draw + premium/discount + macro-time all agree.</li>
+  <li><b>Day-type regime</b> — consolidation (fade EQ) vs expansion (model); AM/PM session structure; no-trade lunch; max-trades/day.</li>
+</ol></div>
+</div>
+<div class="box"><h4>Tier 3 — confluence &amp; array upgrades <span class="pill">_smt, _pd_arrays</span></h4>
+<ol start="8">
+  <li><b>Timed, biased SMT</b> — ES↔NQ / SPY↔QQQ at macro times only; symbol selection.</li>
+  <li><b>OB mean-threshold invalidation</b>; <b>FVG above 50%-of-displacement</b> filter; <b>FVG+OB+OTE</b> golden confluence; <b>old high/low as target</b>; 15m bellwether confirm.</li>
+  <li><b>Management</b> — partial-at-first-array, staged trail (50→25, 75→BE), front-run target; pyramiding (later).</li>
+</ol></div>
+<p class="kbd">Implementation lands in: <code>_time.py</code> (anchors/macro-times/PD-vs-anchor), <code>_bias.py</code>
+(Daily Rebalance draw), and an expanded <code>_strategy.py</code> composing the toggles; <code>_smt.py</code> /
+<code>_pd_arrays.py</code> get the Tier-3 upgrades. Each layer is measured independently before the one definitive
+multi-ticker 4–5yr Phase-E run.</p>
+
+<!-- ============================================================ -->
+<h2 id="glossary">15. Glossary</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>MNO</b></td><td>Midnight New York Open (00:00 ET) — the daily premium/discount pivot. (RTH-equity proxy: the 09:30 open.)</td></tr>
+<tr><td><b>Power of 3 / AMD</b></td><td>Accumulation → Manipulation → Distribution — the anatomy of a candle/day.</td></tr>
+<tr><td><b>Judas swing / protraction</b></td><td>The fake move (manipulation) that grabs liquidity before the real move.</td></tr>
+<tr><td><b>Draw on liquidity</b></td><td>The obvious pool price is reaching for = the bias/target (PDH/PDL, PWH/PWL, old/equal highs-lows).</td></tr>
+<tr><td><b>BSL / SSL</b></td><td>Buy-Side / Sell-Side Liquidity — stops above highs / below lows.</td></tr>
+<tr><td><b>Sweep / purge</b></td><td>Pierce a pool then close back inside (stop-hunt). "Purge &amp; revert" = sweep then return to a 3-day extreme.</td></tr>
+<tr><td><b>Displacement</b></td><td>An energetic, obvious move away from a level that leaves an FVG.</td></tr>
+<tr><td><b>FVG</b></td><td>Fair Value Gap — a 3-candle imbalance; a draw and an entry array. Invalidated only by a body close through it.</td></tr>
+<tr><td><b>IFVG</b></td><td>Inverse FVG — an FVG traded through; flips to opposite S/R.</td></tr>
+<tr><td><b>OB</b></td><td>Order Block — "a change in the state of delivery"; valid only if it left an imbalance. Ref = open + 50% MT.</td></tr>
+<tr><td><b>Breaker</b></td><td>A broken swing level that flips to S/R; FVG+breaker = strong confluence.</td></tr>
+<tr><td><b>MSS / MSB</b></td><td>Market-Structure Shift (break <i>after</i> a sweep = real) vs Market-Structure Break (no sweep = continuation).</td></tr>
+<tr><td><b>OTE</b></td><td>Optimal Trade Entry — the 0.62–0.79 retrace band of the displacement leg.</td></tr>
+<tr><td><b>Mean threshold (MT)</b></td><td>50% of an order-block body; a body close through it invalidates the OB.</td></tr>
+<tr><td><b>Dealing range / EQ</b></td><td>Most recent energetic swing-high→low; equilibrium = its 50%.</td></tr>
+<tr><td><b>STH/ITH/LTH</b></td><td>Short / Intermediate / Long-Term Highs (and …Lows) — the structure hierarchy; ITH/ITL break = significant MSS.</td></tr>
+<tr><td><b>SMT</b></td><td>Smart Money Technique — divergence between correlated pairs (timed, biased confirmation; selects the stronger symbol).</td></tr>
+<tr><td><b>Killzone / macro time</b></td><td>A session window (London/NY AM/Silver Bullet/PM) / a precise anchor time (02:00, 08:30, 09:30, 10:00, 13:30).</td></tr>
+<tr><td><b>MOC</b></td><td>Market-On-Close — order cluster ~15:00 that drives a late volatility burst, esp. on consolidation days.</td></tr>
+<tr><td><b>Daily Rebalance Theory</b></td><td>The bias/draw engine: on a major high/low taken, the last-3-days FVG (or PDH/PDL) defines the draw.</td></tr>
+</table>
+
+<footer>
+Source: 2022 ICT Mentorship (Inner Circle Trader, "@arjoio" Notion notes) — the user's purchased material. This file is an
+<b>engineering synthesis of concepts/methods</b> for implementation, not a reproduction of the decks. All 68 decks read
+(see <code>LEARNING_TRACKER.md</code>). Strategy status: A–D scaffolding complete, edge at breakeven; this map is the basis
+for the model-correctness redesign (Tier 1 → 2 → 3), to be validated on the reserved <b>2025/26</b> holdout (Phase E).
+</footer>
+
+</body>
+</html>
