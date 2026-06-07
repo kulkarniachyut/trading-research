@@ -12,6 +12,11 @@ data/cache/
 *.sqlite
 *.db
 
+# ...but DO commit the durable Databento archive: paid-for CME futures bars, zstd-compressed,
+# canonical 1-minute. Committing it once means no workspace/clone ever re-burns free credits
+# (see data/archive/databento/README.md). The negation must come after the *.parquet rule.
+!data/archive/databento/**/*.parquet
+
 # Secrets — never commit API keys
 .env
 config/secrets.yaml
