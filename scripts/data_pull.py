@@ -50,14 +50,17 @@ def _parse_years(spec: str) -> list[int]:
     return [int(spec)]
 
 
-def _covered(symbol: str, year: int) -> bool:
+def _covered(symbol: str, year: int, available_end: pd.Timestamp) -> bool:
     """True if the whole calendar year is already inside the archived coverage for its scope."""
     scope = archive.scope_for_year(year)
     df = archive.read_1m(symbol, scope)
     if not len(df):
         return False
     yr_start = pd.Timestamp(f"{year}-01-01", tz=archive.NY_TZ)
-    yr_end = pd.Timestamp(f"{year}-12-31 23:59", tz=archive.NY_TZ)
+    # The "end" we expect to have is the calendar year-end, but for an in-progress year the dataset
+    # only reaches ``available_end`` — so a partial current year counts as covered up to that point.
+    yr_end = min(pd.Timestamp(f"{year}-12-31 23:59", tz=archive.NY_TZ),
+                 available_end.tz_convert(archive.NY_TZ))
     return df.index[0] <= yr_start and df.index[-1] >= yr_end
 
 
@@ -65,6 +68,20 @@ def _client(api_key: str):
     import databento as db
 
     return db.Historical(api_key)
+
+
+def _available_end(client) -> pd.Timestamp:
+    """The dataset's latest available timestamp (UTC). Requests past this 422, so we clamp to it."""
+    rng = client.metadata.get_dataset_range(dataset=_DATASET)
+    end = rng.get("end") or rng.get("available_end")
+    return pd.Timestamp(end).tz_convert("UTC") if pd.Timestamp(end).tz else pd.Timestamp(end, tz="UTC")
+
+
+def _year_window(year: int, available_end: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp] | None:
+    """UTC [start, end) for a calendar year, end clamped to the dataset. None if wholly in the future."""
+    start = pd.Timestamp(f"{year}-01-01", tz="UTC")
+    end = min(pd.Timestamp(f"{year + 1}-01-01", tz="UTC"), available_end)
+    return (start, end) if end > start else None
 
 
 def _to_ohlcv(dbnstore) -> pd.DataFrame:
@@ -97,27 +114,34 @@ def main() -> None:
         sys.exit("DATABENTO_API_KEY not found (set it in .env or the environment).")
 
     client = _client(key)
+    available_end = _available_end(client)
 
     # 1. Plan: which (symbol, year) jobs are missing, and what each is estimated to cost.
-    jobs: list[tuple[str, int, float]] = []
+    #    Each job carries its clamped UTC [start, end) so the download uses the exact priced window.
+    jobs: list[tuple[str, int, pd.Timestamp, pd.Timestamp, float]] = []
     skipped = 0
-    print(f"Dataset {_DATASET}  schema {_SCHEMA}  (cost estimates — no data moves yet)\n")
+    print(f"Dataset {_DATASET}  schema {_SCHEMA}  (data through {available_end:%Y-%m-%d})  "
+          f"(cost estimates — no data moves yet)\n")
     for sym in symbols:
         for yr in years:
-            if _covered(sym, yr):
+            window = _year_window(yr, available_end)
+            if window is None:
+                continue  # wholly in the future — no data yet
+            if _covered(sym, yr, available_end):
                 skipped += 1
                 continue
-            start, end = f"{yr}-01-01", f"{yr + 1}-01-01"
+            start, end = window
             cost = client.metadata.get_cost(
                 dataset=_DATASET, symbols=sym, schema=_SCHEMA,
                 stype_in="continuous", start=start, end=end,
             )
             scope = archive.scope_for_year(yr)
             tag = "  [HOLDOUT]" if scope == archive.HOLDOUT else ""
-            print(f"  {sym:8s} {yr}  ~${cost:7.4f}{tag}")
-            jobs.append((sym, yr, float(cost)))
+            partial = "  (partial)" if end < pd.Timestamp(f"{yr + 1}-01-01", tz="UTC") else ""
+            print(f"  {sym:8s} {yr}  ~${cost:7.4f}{tag}{partial}")
+            jobs.append((sym, yr, start, end, float(cost)))
 
-    total = sum(c for _, _, c in jobs)
+    total = sum(j[-1] for j in jobs)
     print(f"\n{len(jobs)} job(s) to fetch, {skipped} already archived.  "
           f"Estimated total: ${total:.4f}")
 
@@ -130,12 +154,10 @@ def main() -> None:
 
     # 2. Download + bank, one (symbol, year) at a time (bounded memory; partial progress survives).
     print()
-    for sym, yr, _cost in jobs:
-        start, end = f"{yr}-01-01", f"{yr + 1}-01-01"
+    for sym, yr, start, end, _cost in jobs:
         store = client.timeseries.get_range(
             dataset=_DATASET, symbols=sym, schema=_SCHEMA,
-            stype_in="continuous",
-            start=pd.Timestamp(start, tz="UTC"), end=pd.Timestamp(end, tz="UTC"),
+            stype_in="continuous", start=start, end=end,
         )
         raw = _to_ohlcv(store)
         bars = normalize_bars(raw, TimeFrame.M1, include_forming=False, now=None, rth=False)
