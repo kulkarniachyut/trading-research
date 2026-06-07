@@ -76,3 +76,17 @@ def alpaca_credentials() -> Optional[AlpacaCredentials]:
     if key and secret:
         return AlpacaCredentials(api_key_id=key, api_secret_key=secret)
     return None
+
+
+def databento_api_key() -> Optional[str]:
+    """Resolve the Databento API key from (in priority order) the process env, ``.env``, then
+    ``config/secrets.yaml``. Returns ``None`` if absent.
+
+    Recognized names: ``DATABENTO_API_KEY`` (env + .env), or a ``databento: {api_key}`` block in
+    ``config/secrets.yaml``.
+    """
+    dotenv = _load_dotenv()
+    key = os.environ.get("DATABENTO_API_KEY") or dotenv.get("DATABENTO_API_KEY")
+    if not key:
+        key = (_load_secrets_yaml().get("databento", {}) or {}).get("api_key")
+    return key or None

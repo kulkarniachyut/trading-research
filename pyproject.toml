@@ -17,6 +17,9 @@ dependencies = [
 data = [
     "yfinance>=0.2.40",
     "alpaca-py>=0.30",
+    # Databento — CME futures (GLBX.MDP3) historical bars: index micros/minis + FX + metals,
+    # the two-sided, drift-neutral instruments the ICT 2022 model is actually built for (exp-015).
+    "databento>=0.40",
 ]
 indicators = [
     # TA-Lib for classic indicators — modern wheels are self-contained (no system C lib

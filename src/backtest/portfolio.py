@@ -34,7 +34,10 @@ class UniverseItem:
 
 def _engine_for(item: UniverseItem, initial_equity: float, risk_pct: float,
                 max_leverage: float) -> BacktestEngine:
-    if item.asset_class is AssetClass.CRYPTO:
+    if item.asset_class is AssetClass.FUTURE:
+        market = Market("US", AssetClass.FUTURE, Product.FUTURES)
+        model = cost_model("US", "future")
+    elif item.asset_class is AssetClass.CRYPTO:
         market = Market("US", AssetClass.CRYPTO, Product.INTRADAY)
         model = cost_model("US", "crypto")
     else:
