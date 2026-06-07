@@ -111,6 +111,10 @@ class Ict2022(BaseStrategy):
             # --- entry model ----------------------------------------------
             "entry_require_fvg": False,              # OTE entry by default; FVG overlap = confluence
             "entry_confirm": False,                  # require an in-direction confirmation close
+            # --- side selection (exp-014): stock shorts are drift-doomed (87% stop-out). Long-bias on
+            #     drifting instruments, two-sided on futures/FX. Default both → no behaviour change.
+            "long_only": False,                      # take only sellside-sweep → long setups
+            "short_only": False,                     # take only buyside-sweep → short setups
             # --- trigger tuning (theory-led; not fit to the test set) ------
             "daily_length": 5,
             "sweep_length": 5,
@@ -221,6 +225,12 @@ class Ict2022(BaseStrategy):
         if sweep is None:
             return
         direction = 1 if sweep.side == "sellside" else -1
+
+        # Side selection (exp-014): skip the disallowed direction outright.
+        if self.params["long_only"] and direction == -1:
+            return
+        if self.params["short_only"] and direction == 1:
+            return
 
         draw = self._daily_draw(ctx)
         if not self._bias_allows(direction, draw):
