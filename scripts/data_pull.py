@@ -50,18 +50,23 @@ def _parse_years(spec: str) -> list[int]:
     return [int(spec)]
 
 
-def _covered(symbol: str, year: int, available_end: pd.Timestamp) -> bool:
-    """True if the whole calendar year is already inside the archived coverage for its scope."""
-    scope = archive.scope_for_year(year)
-    df = archive.read_1m(symbol, scope)
+def _covered(symbol: str, year: int, avail: tuple[pd.Timestamp, pd.Timestamp]) -> bool:
+    """True if the year (clamped to the dataset's available range) is already archived for its scope."""
+    window = _year_window(year, avail)
+    if window is None:
+        return True  # nothing available for this year ⇒ nothing to fetch
+    df = archive.read_1m(symbol, archive.scope_for_year(year))
     if not len(df):
         return False
-    yr_start = pd.Timestamp(f"{year}-01-01", tz=archive.NY_TZ)
-    # The "end" we expect to have is the calendar year-end, but for an in-progress year the dataset
-    # only reaches ``available_end`` — so a partial current year counts as covered up to that point.
-    yr_end = min(pd.Timestamp(f"{year}-12-31 23:59", tz=archive.NY_TZ),
-                 available_end.tz_convert(archive.NY_TZ))
-    return df.index[0] <= yr_start and df.index[-1] >= yr_end
+    # The dataset only spans [avail]; a boundary year (2010 start, current year end) is partial, so
+    # it counts as covered once the archive reaches that clamped window — not the full calendar year.
+    w_start, w_end = (t.tz_convert(archive.NY_TZ) for t in window)
+    return df.index[0] <= w_start and df.index[-1] >= w_end - pd.Timedelta(minutes=1)
+
+
+def _short_err(exc: Exception) -> str:
+    """First line of an exception message, for a one-line skip note."""
+    return str(exc).strip().splitlines()[0] if str(exc).strip() else type(exc).__name__
 
 
 def _client(api_key: str):
@@ -70,17 +75,22 @@ def _client(api_key: str):
     return db.Historical(api_key)
 
 
-def _available_end(client) -> pd.Timestamp:
-    """The dataset's latest available timestamp (UTC). Requests past this 422, so we clamp to it."""
+def _available_range(client) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """The dataset's available ``[start, end]`` (UTC). Requests outside this 422, so we clamp to it."""
     rng = client.metadata.get_dataset_range(dataset=_DATASET)
+    start = rng.get("start") or rng.get("available_start")
     end = rng.get("end") or rng.get("available_end")
-    return pd.Timestamp(end).tz_convert("UTC") if pd.Timestamp(end).tz else pd.Timestamp(end, tz="UTC")
+    return pd.Timestamp(start).tz_convert("UTC"), pd.Timestamp(end).tz_convert("UTC")
 
 
-def _year_window(year: int, available_end: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp] | None:
-    """UTC [start, end) for a calendar year, end clamped to the dataset. None if wholly in the future."""
-    start = pd.Timestamp(f"{year}-01-01", tz="UTC")
-    end = min(pd.Timestamp(f"{year + 1}-01-01", tz="UTC"), available_end)
+def _year_window(
+    year: int, avail: tuple[pd.Timestamp, pd.Timestamp]
+) -> tuple[pd.Timestamp, pd.Timestamp] | None:
+    """UTC [start, end) for a calendar year, clamped to the dataset's available range. None if the
+    year lies wholly outside what the dataset offers (before its start or after its end)."""
+    avail_start, avail_end = avail
+    start = max(pd.Timestamp(f"{year}-01-01", tz="UTC"), avail_start)
+    end = min(pd.Timestamp(f"{year + 1}-01-01", tz="UTC"), avail_end)
     return (start, end) if end > start else None
 
 
@@ -101,8 +111,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--symbols", default=",".join(DEFAULT_SYMBOLS),
                     help="comma-separated continuous symbols (default: full research universe)")
-    ap.add_argument("--years", default="2021-2024",
-                    help="year or YYYY-YYYY range (default 2021-2024; 2025+ routes to sealed holdout)")
+    ap.add_argument("--years", default="2010-2026",
+                    help="year or YYYY-YYYY range (default 2010-2026 = full GLBX.MDP3 history; clamped "
+                         "to the dataset's available range; 2025+ routes to the sealed holdout)")
     ap.add_argument("--yes", action="store_true", help="actually download (default: estimate only)")
     args = ap.parse_args()
 
@@ -114,30 +125,36 @@ def main() -> None:
         sys.exit("DATABENTO_API_KEY not found (set it in .env or the environment).")
 
     client = _client(key)
-    available_end = _available_end(client)
+    avail = _available_range(client)
 
     # 1. Plan: which (symbol, year) jobs are missing, and what each is estimated to cost.
     #    Each job carries its clamped UTC [start, end) so the download uses the exact priced window.
     jobs: list[tuple[str, int, pd.Timestamp, pd.Timestamp, float]] = []
     skipped = 0
-    print(f"Dataset {_DATASET}  schema {_SCHEMA}  (data through {available_end:%Y-%m-%d})  "
+    print(f"Dataset {_DATASET}  schema {_SCHEMA}  (data {avail[0]:%Y-%m-%d} .. {avail[1]:%Y-%m-%d})  "
           f"(cost estimates — no data moves yet)\n")
     for sym in symbols:
         for yr in years:
-            window = _year_window(yr, available_end)
+            window = _year_window(yr, avail)
             if window is None:
-                continue  # wholly in the future — no data yet
-            if _covered(sym, yr, available_end):
+                continue  # outside the dataset's available range — nothing to fetch
+            if _covered(sym, yr, avail):
                 skipped += 1
                 continue
             start, end = window
-            cost = client.metadata.get_cost(
-                dataset=_DATASET, symbols=sym, schema=_SCHEMA,
-                stype_in="continuous", start=start, end=end,
-            )
+            try:
+                cost = client.metadata.get_cost(
+                    dataset=_DATASET, symbols=sym, schema=_SCHEMA,
+                    stype_in="continuous", start=start, end=end,
+                )
+            except Exception as exc:  # symbology gaps: a contract that didn't exist that year
+                print(f"  {sym:8s} {yr}  -- skip ({_short_err(exc)})")
+                continue
             scope = archive.scope_for_year(yr)
             tag = "  [HOLDOUT]" if scope == archive.HOLDOUT else ""
-            partial = "  (partial)" if end < pd.Timestamp(f"{yr + 1}-01-01", tz="UTC") else ""
+            full_year = (start == pd.Timestamp(f"{yr}-01-01", tz="UTC")
+                         and end == pd.Timestamp(f"{yr + 1}-01-01", tz="UTC"))
+            partial = "" if full_year else "  (partial)"
             print(f"  {sym:8s} {yr}  ~${cost:7.4f}{tag}{partial}")
             jobs.append((sym, yr, start, end, float(cost)))
 
@@ -155,10 +172,14 @@ def main() -> None:
     # 2. Download + bank, one (symbol, year) at a time (bounded memory; partial progress survives).
     print()
     for sym, yr, start, end, _cost in jobs:
-        store = client.timeseries.get_range(
-            dataset=_DATASET, symbols=sym, schema=_SCHEMA,
-            stype_in="continuous", start=start, end=end,
-        )
+        try:
+            store = client.timeseries.get_range(
+                dataset=_DATASET, symbols=sym, schema=_SCHEMA,
+                stype_in="continuous", start=start, end=end,
+            )
+        except Exception as exc:
+            print(f"  {sym:8s} {yr}  -- skip ({_short_err(exc)})", flush=True)
+            continue
         raw = _to_ohlcv(store)
         bars = normalize_bars(raw, TimeFrame.M1, include_forming=False, now=None, rth=False)
         scope = archive.scope_for_year(yr)

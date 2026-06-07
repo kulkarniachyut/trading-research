@@ -58,6 +58,25 @@ def test_write_read_roundtrip_and_idempotent_merge(archive_root):
     assert total == len(bars)
 
 
+def test_write_chunks_one_file_per_year(archive_root):
+    # Bars spanning two calendar years must split into two per-year chunk files.
+    dec = pd.date_range("2022-12-31 09:30", periods=120, freq="1min", tz=NY)
+    jan = pd.date_range("2023-01-02 09:30", periods=120, freq="1min", tz=NY)
+    idx = dec.append(jan)
+    base = np.arange(len(idx), dtype=float)
+    bars = pd.DataFrame(
+        {"open": base, "high": base + 0.5, "low": base - 0.5, "close": base, "volume": 1.0},
+        index=idx,
+    )
+    archive.write_1m("ES.c.0", bars, archive.REFERENCE)
+
+    sym_dir = archive_root / archive.REFERENCE / "ES.c.0"
+    files = sorted(p.name for p in sym_dir.glob("*.parquet"))
+    assert files == ["2022.parquet", "2023.parquet"]
+    # And reading concatenates them back into the full series.
+    assert len(archive.read_1m("ES.c.0", archive.REFERENCE)) == len(bars)
+
+
 def test_read_for_range_slices_and_seals_holdout(archive_root):
     archive.write_1m("ES.c.0", _synthetic_1m("2023-06-01"), archive.REFERENCE)
     archive.write_1m("ES.c.0", _synthetic_1m("2025-06-01"), archive.HOLDOUT)
