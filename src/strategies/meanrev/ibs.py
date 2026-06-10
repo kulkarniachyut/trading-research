@@ -48,6 +48,12 @@ class IbsRev(BaseStrategy):
             "max_hold_days": 5,
             "atr_period": 20,
             "atr_stop": 3.0,
+            # Passive entry: rest a buy limit at the signal day's close instead of paying the
+            # taker spread at the next open. IBS buys weakness — the natural passive fill.
+            # Unfilled (price never pulled back) = signal expires; that selection effect is
+            # part of the measurement, not an inconvenience.
+            "limit_entry": False,
+            "limit_ttl_bars": 24,  # ~one session of H1 base bars
         }
 
     @classmethod
@@ -95,4 +101,6 @@ class IbsRev(BaseStrategy):
             return None
         return Signal(timestamp=ctx.now, symbol=ctx.position.symbol, side="long",
                       stop=close - p["atr_stop"] * atr_d,
-                      reason=f"ibs_buy_{cur_ibs:.2f}")
+                      reason=f"ibs_buy_{cur_ibs:.2f}",
+                      limit=close if p["limit_entry"] else None,
+                      ttl_bars=int(p["limit_ttl_bars"]))

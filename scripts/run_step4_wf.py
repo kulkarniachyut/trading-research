@@ -58,6 +58,8 @@ def main() -> None:
     family = args[args.index("--family") + 1] if "--family" in args else "ibs"
     cls, fut, warmup_days = FAMILIES[family]
     oos = "--oos" in args
+    limit = "--limit" in args  # passive limit entry (ibs) — engine maker-costed
+    base_params: dict = {"limit_entry": True} if limit else {}
 
     if oos:
         # ONE continuous 2023-24 test span (train = design years, informational — nothing is
@@ -86,13 +88,14 @@ def main() -> None:
         return res
 
     wf = walk_forward(
-        lambda p=None: cls(p or {}), uni, folds,
+        lambda p=None: cls({**base_params, **(p or {})}), uni, folds,
         run_fn=run_with_warmup, provider=prov, base_tf=TimeFrame.H1,
-        risk_pct=RISK_PCT, initial_equity=INITIAL_EQUITY,
+        risk_pct=RISK_PCT, initial_equity=INITIAL_EQUITY, passive_maker=limit,
     )
 
     label = "OOS 2023/24 (one-shot)" if oos else "design-years dry-run"
-    print(f"=== Step-4 walk-forward · {family} · {label} · theory-fixed defaults ===")
+    entry = " · LIMIT entry" if limit else ""
+    print(f"=== Step-4 walk-forward · {family} · {label} · theory-fixed defaults{entry} ===")
     for fr in wf.folds:
         errs = f"  errs={fr.test.errors}" if fr.test.errors else ""
         print(f"  {fr.fold.label}:  {fr.test_trade_count:4d} tr  "

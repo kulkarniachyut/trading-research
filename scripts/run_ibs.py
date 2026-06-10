@@ -50,6 +50,9 @@ def main() -> None:
     }
     if "--no-trend-gate" in args:
         params["trend_ma"] = 1  # MA(1) = close — gate always passes
+    limit = "--limit" in args
+    if limit:
+        params["limit_entry"] = True
 
     prov = DatabentoProvider()
     uni = [UniverseItem(s, AssetClass.FUTURE, multiplier=m, tick_size=t) for s, m, t in FUT]
@@ -59,11 +62,13 @@ def main() -> None:
         pd.Timestamp(f"{y1}-12-31", tz="America/New_York"),
         provider=prov, base_tf=TimeFrame.H1,
         initial_equity=INITIAL_EQUITY, risk_pct=RISK_PCT, max_leverage=4.0,
+        passive_maker=limit,
     )
     risk = RISK_PCT * INITIAL_EQUITY
     trades = [t for r in res.results.values() for t in r.trades]
     gate = "no-gate" if "--no-trend-gate" in args else "MA200 gate"
-    print(f"=== IBS buy<{params['buy_below']:g} exit>{params['exit_above']:g} [{gate}]  "
+    entry = "LIMIT@close" if limit else "market@open"
+    print(f"=== IBS buy<{params['buy_below']:g} exit>{params['exit_above']:g} [{gate}, {entry}]  "
           f"{y0}-{y1}  (R=${risk:,.0f}) ===")
     if res.errors:
         print(f"  errors: {res.errors}")

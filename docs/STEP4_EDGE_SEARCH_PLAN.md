@@ -75,6 +75,20 @@ positive (the era least correlated with how we picked IBS). Era report: 2000–0
 conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
 
 ## Run log
+- **2026-06-10 · limit-entry execution (user-approved friction work).** Engine extended with
+  causal resting-limit entries (`Signal.limit`/`ttl_bars`): gap-through fills at open, strict
+  trade-through at the limit, touch ≠ fill, TTL cancel; passive fills maker-costed (no taker
+  spread/slippage, fees remain); exits stay taker. 6 unit tests. IBS gets `limit_entry`
+  (limit = signal-day close — dip-buying is the natural passive fill).
+  - **IS 2017–22:** +0.038R vs +0.028R market (+36%), fill rate 94% (596/635), cost
+    0.010→0.006R, all 5 symbols positive, 2022 improves −0.106→−0.040R.
+  - **2023/24 re-read (QUALIFIED — second look at burned years; signal frozen, only entry
+    tactic changed):** **+0.034R** vs +0.026R, 2024 flips −0.001→+0.020R, MC p5 −1.5R,
+    P(≤0) 7.6% (was 9.9%) → **still FAILS the p5 gate**.
+  → Verdict: the execution lift is real, consistent and mechanically explained, and it
+  compounds with any future scale-up — but it does not change the category: IBS-on-micros is
+  *probably real (≈92%), still sub-scale on 5 instruments*. Clearing the bar needs breadth
+  (more instruments = the only honest variance reducer left) or live/paper evidence.
 - **2026-06-10 · run_ibs_etf (16 ETFs, frozen rule, 2000–2024, one shot): FAIL.**
   Pooled +0.004R net (7,805 tr), breadth 8/16 = 50% ✗, MC pooled P(≤0)=20.6% ✗,
   **pre-2017 ≈ coin flip (P(≤0)=45.1%)** ✗. Era split: 2000–08 −0.004R, 2009–16 +0.005R,
