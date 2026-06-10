@@ -74,6 +74,21 @@ positive (the era least correlated with how we picked IBS). Era report: 2000–0
 17–22 / 23–24. Caveats accepted: unadjusted prices (dividend drag biases longs *down* —
 conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
 
+## Live paper experiment — PRE-REGISTERED acceptance criteria (written 2026-06-10, BEFORE
+## any live fill exists; first orders submitted this date)
+The journal (`data/paper_journal.jsonl`) is judged by `scripts/paper_review.py` against the
+backtest, with thresholds fixed now:
+- **Review gates:** interim at 60 IBS trade-events, full at 120 (~6 months).
+- **PASS (go to small live)** = all of: (a) IBS fill rate within [70%, 100%] of signals
+  (backtest: 81–94% — materially lower means the maker-fill assumption is wrong);
+  (b) realized pooled expectancy ≥ (backtest mean − 1σ of a same-size backtest sample):
+  for IBS ≥ −0.04R at n=120 (mean +0.026R, per-trade σ≈0.7R ⇒ σ/√120≈0.064R);
+  (c) no structural breaks: realized per-trade cost/slippage ≤ 2× modeled.
+- **FAIL (stop, post-mortem)** = expectancy below −1σ band at a gate, or fill rate < 70%,
+  or realized slippage > 2× modeled. No threshold may be revised after data exists.
+- TOM judged separately at 12 window-events (~1 year) against +0.057R ± same-σ logic;
+  interim sanity at 6 events (sign only, no action).
+
 ## Run log
 - **2026-06-10 · TOM cross-asset confirmation (PRE-REGISTERED before the run):** same frozen
   rule on the Databento index futures (ES/NQ/YM/RTY micros, H1 base, 2017–2024 — independent
