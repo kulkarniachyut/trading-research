@@ -105,6 +105,21 @@ When compacting, always preserve:
         (use as catalyst, not filter). None of SMT/regime/news lifts the breakeven edge.
   - [ ] E — **Definitive run**: full setup (toggles) across all tickers/markets, 4–5yr, portfolio
         walk-forward + Monte Carlo on the reserved **2025/26** holdout. (A–D scaffolding complete; this is the verdict.)
-- [ ] Step 4 — More strategies (momentum, mean-reversion)
+- [~] Step 4 — More strategies (momentum, mean-reversion) — **in progress, see
+      `docs/STEP4_EDGE_SEARCH_PLAN.md`** (pivot decision 2026-06-10: ICT Phase E deferred,
+      runs later as comparison baseline)
+  - [x] Diagnostic: ES/NQ session anatomy 2017–22 (overnight drift weak; ORB raw +0.13–0.15R
+        gross; upside OR breaks follow through, downside don't; small ES gaps fade)
+  - [x] ORB (`orb`) — **retired**: gross +0.04–0.11R real in every variant, but no predeclared
+        construction clears micro costs (all within ±0.005R of breakeven post-cost)
+  - [x] TSMOM (`tsmom`) — **parked**: IS weakly + at all lookbacks but lumpy; OOS 2023/24
+        +0.128R yet breadth 44%, MC p5 −14R, GC carries 77%. 9 markets ≠ enough breadth.
+  - [x] IBS mean-reversion (`ibs_rev`) — **parked, replicated**: IS +0.028R → OOS +0.026R
+        (magnitude replicates!), 60% breadth, but MC p5 −2.5R (P(luck) 9.9%) — real-looking
+        but sub-scale on 5 instruments. Strongest candidate for a combo/scale-up.
+  - **2023/24 now burned for IBS+TSMOM** (one-shot OOS spent). Engine fix shipped: open
+    positions mark-to-market at end-of-data (`end_of_data`), censoring bias removed.
+  - [ ] Next: gap-fade family, cross-sectional equity momentum (yfinance daily), crypto
+        momentum, or edge-combination (combo's only clean test = the 2025/26 holdout)
 - [ ] Step 5 — Comparison runner + Streamlit dashboard
 - [ ] Step 6 — Paper execution (Broker, risk layer, paper loop, manual approval)

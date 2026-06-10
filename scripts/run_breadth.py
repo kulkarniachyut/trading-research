@@ -31,8 +31,11 @@ CRYPTO = ["BTCUSD", "ETHUSD", "LTCUSD", "BCHUSD", "SOLUSD", "AVAXUSD", "LINKUSD"
 def _stat(ts: list) -> str:
     if not ts:
         return "  0 tr"
-    n = len(ts); w = sum(1 for t in ts if t.net_pnl > 0); net = sum(t.net_pnl for t in ts)
-    st = sum(1 for t in ts if t.reason_out == "stop"); tg = sum(1 for t in ts if t.reason_out == "target")
+    n = len(ts)
+    w = sum(1 for t in ts if t.net_pnl > 0)
+    net = sum(t.net_pnl for t in ts)
+    st = sum(1 for t in ts if t.reason_out == "stop")
+    tg = sum(1 for t in ts if t.reason_out == "target")
     return f"{n:3d} tr  {w / n * 100:3.0f}% win  net {net:9,.0f}  (stop {st}/tgt {tg})"
 
 
@@ -60,7 +63,8 @@ def main() -> None:
             provider=prov, crypto_provider=crypto_prov, base_tf=TimeFrame.M5,
         )
         trades = [t for r in res.results.values() for t in r.trades]
-        longs = [t for t in trades if t.side == "long"]; shorts = [t for t in trades if t.side == "short"]
+        longs = [t for t in trades if t.side == "long"]
+        shorts = [t for t in trades if t.side == "short"]
         flags = " ".join(f for f in ("--long-only", "--equities-only", "--indices-only") if f in args) or "full"
         print(f"\n=== breadth {yr} [{flags}]: {len(res.results)}/{len(universe)} symbols "
               f"({', '.join(res.errors) or 'no errors'}) ===", flush=True)

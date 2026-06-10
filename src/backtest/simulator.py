@@ -140,6 +140,16 @@ class BacktestEngine:
                 elif open_pos is not None and signal.side == "flat":
                     pending_exit = True
 
+        # End of data: mark any open position to the last close as a real (cost-bearing) exit.
+        # Silently dropping it censors slow strategies — their multi-month winners are exactly
+        # the trades still open at a span boundary (walk-forward folds chop on calendar years).
+        if open_pos is not None and len(base_bars):
+            last = base_bars.iloc[-1]
+            trades.append(self._close(open_pos, float(last["close"]), index[-1] + base_dur,
+                                      len(base_bars) - 1, "end_of_data", slip_atr))
+            realized += trades[-1].net_pnl
+            open_pos = None
+
         equity_curve = pd.Series(equity_values, index=pd.DatetimeIndex(equity_times), name="equity")
         return Result(
             strategy=strategy.name,
