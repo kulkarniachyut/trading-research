@@ -64,7 +64,35 @@ Crypto momentum stays a backlog item (B.5 showed crypto needs its own session/co
   ablation pass is **retired**, not tuned. (ICT lesson: more tuning ≠ more edge.)
 - Record every run's verdict in this doc's log (below) — negative results are deliverables.
 
+## IBS breadth scale-up (approved by user 2026-06-10)
+IBS replicated on 5 futures but is sub-scale. Widen the SAME frozen rule (0.2/0.8/MA200,
+long-only, 5d time exit, 3-ATR stop — zero changes) to 16 US equity ETFs on yfinance daily
+(decades of history; instruments and pre-2017 years are fresh evidence).
+**PRE-REGISTERED (before the run):** one run, 2000–2024, frozen params. PASS = pooled
+expectancy > 0 post-cost AND breadth ≥ 60% AND MC p5 ≥ 0 AND the pre-2017 era alone is
+positive (the era least correlated with how we picked IBS). Era report: 2000–08 / 09–16 /
+17–22 / 23–24. Caveats accepted: unadjusted prices (dividend drag biases longs *down* —
+conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
+
 ## Run log
+- **2026-06-10 · run_ibs_etf (16 ETFs, frozen rule, 2000–2024, one shot): FAIL.**
+  Pooled +0.004R net (7,805 tr), breadth 8/16 = 50% ✗, MC pooled P(≤0)=20.6% ✗,
+  **pre-2017 ≈ coin flip (P(≤0)=45.1%)** ✗. Era split: 2000–08 −0.004R, 2009–16 +0.005R,
+  2017–22 **+0.027R**, 2023–24 −0.033R. Two readings, both important:
+  1. *The gross signal exists on ETFs too* (+0.044R/tr) — but the conservative equity cost
+     model charges 0.040R (0.05×daily-ATR slippage ≈ 15bps RT vs futures' 0.010R). Same rule,
+     same gross, 4× the friction → net zero. **Friction, not signal, decides this family.**
+  2. *The era pattern is damning for stability*: the effect concentrates in 2017–22 — exactly
+     the era we selected on — and is absent pre-2017 across 5,000+ trades. The futures
+     replication (2023/24) is adjacent-era, not independent-era, evidence. IBS looks like a
+     **regime-era effect, not a 25-year anomaly**.
+  → IBS-ETF parks. The IBS-futures card (P(real)≈90%) stays the best single result but its
+  prior is now weaker. Honest cross-search synthesis: every gross edge found so far
+  (ORB +0.04–0.11R, IBS +0.03–0.04R) is microstructure-scale and lives or dies on friction;
+  paths that change the game are (a) execution realism for dip-buying (limit/MOC entries — IBS
+  buys weakness, ideal for passive fills; our market-at-next-open assumption is worst-case),
+  (b) bigger-gross families (events/earnings, overnight gap structure, crypto), (c) breadth
+  TSMOM can't reach with 9 markets.
 - **2026-06-10 · diag_session_anatomy (ES/NQ 1m, 2017–2022, reference only).** Findings:
   1. *Overnight drift* exists (+2.7/+3.7 bps/night ES/NQ, hit 56–57%) but weak (t≈1.2–1.5
      pooled, sign-flips in 2022) — too small vs costs to trade standalone; useful as context.
