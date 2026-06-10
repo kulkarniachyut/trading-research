@@ -75,6 +75,18 @@ positive (the era least correlated with how we picked IBS). Era report: 2000–0
 conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
 
 ## Run log
+- **2026-06-10 · IBS-ETF with passive limit entry (QUALIFIED second look — signal frozen,
+  execution-only change, limit-at-close was the pre-stated design from the friction analysis):**
+  **+0.026R pooled / 6,285 trades / breadth 14/16 (88%) / MC p5 +101R, P(≤0)=0.0% → SURVIVES.**
+  Era split: 2000–08 **+0.020R**, 2009–16 **+0.034R**, 2017–22 **+0.043R**, 2023–24 −0.024R.
+  **Pre-2017 alone: MC p5 +64.8R, P(≤0)=0.0%** — the "era-dependence" concern is resolved: the
+  effect existed all 25 years; taker friction (not signal absence) made the market-entry read
+  zero pre-2017. Fill rate 81%. GLD control near-weakest ✓. Caveats: yfinance unadjusted daily
+  (dividend drag biases *against* longs — survived anyway), occasional split artifacts (EEM
+  2005), maker model = fees-only (reasonable for resting limits on SPY-class liquidity,
+  conservative trade-through fill rule). **Open question: 2023–24 negative — decay/crowding?**
+  The clean answer is the untouched 2025/26 (never fetched for ETFs). This is the project's
+  single sealed bullet — spend only with user sign-off, with criteria pre-registered.
 - **2026-06-10 · limit-entry execution (user-approved friction work).** Engine extended with
   causal resting-limit entries (`Signal.limit`/`ttl_bars`): gap-through fills at open, strict
   trade-through at the limit, touch ≠ fill, TTL cancel; passive fills maker-costed (no taker

@@ -45,18 +45,23 @@ def main() -> None:
     if y1 >= 2025:
         raise SystemExit("2025/26 stays sealed everywhere, including yfinance reads")
 
+    limit = "--limit" in sys.argv  # passive limit-at-close entry, maker-costed (qualified re-read)
+    params = {"limit_entry": True, "limit_ttl_bars": 1} if limit else {}  # D1 base: ttl = 1 day
+
     prov = YFinanceProvider()
     uni = [UniverseItem(s) for s in ETFS]  # EQUITY defaults: multiplier 1, bps-spread cost model
     res = run_portfolio(
-        lambda: IbsRev({}), uni,
+        lambda: IbsRev(params), uni,
         pd.Timestamp(f"{y0}-01-01", tz="America/New_York"),
         pd.Timestamp(f"{y1}-12-31", tz="America/New_York"),
         provider=prov, base_tf=TimeFrame.D1,
         initial_equity=INITIAL_EQUITY, risk_pct=RISK_PCT, max_leverage=2.0,
+        passive_maker=limit,
     )
     risk = RISK_PCT * INITIAL_EQUITY
     trades = [t for r in res.results.values() for t in r.trades]
-    print(f"=== IBS-ETF frozen rule  {y0}-{y1}  {len(res.results)}/{len(ETFS)} symbols  "
+    entry = "LIMIT@close" if limit else "market@open"
+    print(f"=== IBS-ETF frozen rule [{entry}]  {y0}-{y1}  {len(res.results)}/{len(ETFS)} symbols  "
           f"(R=${risk:,.0f}) ===")
     if res.errors:
         print(f"  errors: {res.errors}")
