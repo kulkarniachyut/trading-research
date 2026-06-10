@@ -75,6 +75,23 @@ positive (the era least correlated with how we picked IBS). Era report: 2000–0
 conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
 
 ## Run log
+- **2026-06-10 · turn-of-month family (user directive: mine existing/old data, zero spend).**
+  `turn_of_month` built: long 4th-to-last session open → 4th session open of next month
+  (McConnell & Xu 2008 spec, theory-fixed), NYSE calendar forward-safe, 3-ATR disaster stop,
+  ~12 trades/yr/symbol. **PRE-REGISTERED before the read:** SPY/QQQ/DIA/IWM + GLD control,
+  2000–2024 yfinance daily, market entry. PASS = pooled exp > 0 post-cost AND ≥3/4 equity
+  ETFs positive AND MC p5 ≥ 0 (pooled and pre-2017) AND ≥3/4 eras positive AND GLD weaker
+  than the equity average. Result: **ALL CRITERIA PASS — first family to fully pass, on a
+  first look, under taker costs.** Pooled **+0.057R** / 1,433 tr (gross +0.098R, cost 0.040R);
+  eras +0.057/+0.068/+0.035/**+0.083** (2023–24 strongest — complements IBS's weak era);
+  equity ETFs 4/4 positive (SPY +0.070, QQQ +0.067, DIA +0.063, IWM +0.036), GLD control
+  +0.047 < equity avg ✓; MC pooled p5 +42.6R (P 0.0%), pre-2017 p5 +26.9R (P 0.1%), and the
+  **strictest test — month-clustered MC (299 independent events, since all symbols trade the
+  same window): p5 +13.5R, P(≤0) 2.5% → SURVIVES.** Post-publication OOS too: the source paper
+  used 1926–2005; our 2009–2024 is post-publication and holds. Caveats: yfinance unadjusted
+  (bias against longs — survived), first-look window. **Verdict: VALIDATED candidate #2** —
+  near-orthogonal to IBS (calendar flow vs dip reversion), same account, ~12 decisions/yr.
+  → added to the paper-trading signal sheet alongside IBS.
 - **2026-06-10 · IBS-ETF with passive limit entry (QUALIFIED second look — signal frozen,
   execution-only change, limit-at-close was the pre-stated design from the friction analysis):**
   **+0.026R pooled / 6,285 trades / breadth 14/16 (88%) / MC p5 +101R, P(≤0)=0.0% → SURVIVES.**

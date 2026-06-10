@@ -88,6 +88,42 @@ def main() -> None:
     print(">>> EXITS for held positions: sell when day closes with IBS >= "
           f"{EXIT_ABOVE}, or at the close of day {MAX_HOLD}, or at your stop — whichever first.")
 
+    _tom_status()
+
+
+def _tom_status() -> None:
+    """Turn-of-month window state (validated candidate #2 — see STEP4_EDGE_SEARCH_PLAN.md):
+    long SPY/QQQ/DIA/IWM from the open of the 4th-to-last session of the month through the
+    open of the 4th session of the next month. Market orders are fine (~12 round trips/yr)."""
+    import pandas_market_calendars as mcal
+
+    from src.strategies.meanrev.turn_of_month import month_position
+
+    today = pd.Timestamp.now(tz="America/New_York").normalize().tz_localize(None)
+    sched = mcal.get_calendar("NYSE").schedule(
+        start_date=today - timedelta(days=45), end_date=today + timedelta(days=45))
+    sessions = pd.DatetimeIndex(sched.index)
+    pos = month_position(sessions)
+    future = [s for s in sessions if s >= today]
+    if not future:
+        return
+    cur = pd.Timestamp(future[0]).normalize()
+    day_no, days_left = pos[cur]
+    in_window = days_left <= 4 or day_no <= 3
+    print("\n>>> TURN-OF-MONTH (SPY/QQQ/DIA/IWM, equal risk):")
+    if in_window:
+        exits = [s for s in future if pos[pd.Timestamp(s).normalize()][0] == 4
+                 and s.month != cur.month or (pos[pd.Timestamp(s).normalize()][0] == 4
+                                              and day_no <= 3 and s.month == cur.month)]
+        nxt_exit = min(exits).date() if exits else "4th session of next month"
+        print(f"    WINDOW ACTIVE (session {day_no}, {days_left} left in month). "
+              f"Hold/enter; exit at the OPEN of {nxt_exit}.")
+    else:
+        entries = [s for s in future if pos[pd.Timestamp(s).normalize()][1] == 4]
+        nxt = min(entries).date() if entries else "?"
+        print(f"    window closed — next entry: buy at the OPEN of {nxt} "
+              f"(4th-to-last session), exit at the open of the 4th session of the next month.")
+
 
 if __name__ == "__main__":
     main()
