@@ -75,6 +75,14 @@ positive (the era least correlated with how we picked IBS). Era report: 2000–0
 conservative) and 0.05×daily-ATR slippage (overstated for liquid ETFs — conservative).
 
 ## Run log
+- **2026-06-10 · TOM cross-asset confirmation (PRE-REGISTERED before the run):** same frozen
+  rule on the Databento index futures (ES/NQ/YM/RTY micros, H1 base, 2017–2024 — independent
+  data source; first TOM touch of any futures year). PASS = pooled exp > 0 post-cost AND
+  ≥3/4 symbols positive AND month-clustered MC P(≤0) ≤ 10% (~96 events). Result:
+  **pooled +0.050R ✓ (vs ETF +0.057R — magnitude consistent), 4/4 symbols positive ✓, but
+  clustered MC P(≤0)=16.6% ✗ → per pre-registration: CORROBORATION, not independent proof**
+  (8 years is simply a small sample for a monthly effect; yearly pattern choppy —
+  2021/22/24 negative). Net: strengthens TOM modestly; the ETF read remains the evidence base.
 - **2026-06-10 · turn-of-month family (user directive: mine existing/old data, zero spend).**
   `turn_of_month` built: long 4th-to-last session open → 4th session open of next month
   (McConnell & Xu 2008 spec, theory-fixed), NYSE calendar forward-safe, 3-ATR disaster stop,
