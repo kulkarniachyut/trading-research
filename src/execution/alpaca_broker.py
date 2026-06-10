@@ -64,6 +64,12 @@ class AlpacaPaperBroker:
         orders = self._client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
         return {o.symbol for o in orders}
 
+    def order_status(self, order_id: str) -> tuple[str, int, Optional[float]]:
+        """(status, filled_qty, filled_avg_price) for one order — the reconcile primitive."""
+        o = self._client.get_order_by_id(order_id)
+        px = float(o.filled_avg_price) if o.filled_avg_price else None
+        return str(o.status.value), int(float(o.filled_qty or 0)), px
+
     # --- submission ----------------------------------------------------------
 
     def submit(self, plan: OrderPlan) -> str:

@@ -86,24 +86,42 @@ def main() -> None:
     print(f"paper loop {today.date()} — equity ${equity:,.0f}, "
           f"{len(lots)} lots, {len(pending)} pending entries")
 
-    # 1. reconcile yesterday's pending limit entries
+    # 1. reconcile yesterday's pending limit entries — by ORDER lookup (records the actual
+    #    fill price the realized-R judgment needs), with position check as a fallback only.
     for rec in pending:
         sym, system = rec["symbol"], rec["system"]
-        have = positions.get(sym, 0)
-        lot_qty = sum(lo.qty for lo in lots if lo.symbol == sym)
-        if have >= lot_qty + int(rec["qty"]):  # the limit filled
+        status, filled_qty, fill_px = ("", 0, None)
+        if rec.get("order_id"):
+            try:
+                status, filled_qty, fill_px = broker.order_status(rec["order_id"])
+            except Exception as exc:  # noqa: BLE001
+                print(f"  {sym}: order lookup failed ({exc}); falling back to positions")
+        if not status:  # fallback: infer from holdings
+            lot_qty = sum(lo.qty for lo in lots if lo.symbol == sym)
+            filled = positions.get(sym, 0) >= lot_qty + int(rec["qty"])
+            status, filled_qty = ("filled", int(rec["qty"])) if filled else ("expired", 0)
+        if status == "filled" or filled_qty > 0:
             _journal_append({"kind": "lot_open", "system": system, "symbol": sym,
-                             "qty": rec["qty"], "entry_session": str(today.date()),
-                             "stop": rec.get("stop")})
-            lots.append(Lot(system, sym, int(rec["qty"]), str(today.date()), rec.get("stop")))
+                             "qty": filled_qty or rec["qty"], "entry_session": str(today.date()),
+                             "stop": rec.get("stop"), "fill_price": fill_px,
+                             "limit": rec.get("limit")})
+            lots.append(Lot(system, sym, int(filled_qty or rec["qty"]), str(today.date()),
+                            rec.get("stop")))
             if rec.get("stop") and not dry:
-                oid = broker.submit(OrderPlan(system, "stop_gtc", sym, int(rec["qty"]),
+                oid = broker.submit(OrderPlan(system, "stop_gtc", sym,
+                                              int(filled_qty or rec["qty"]),
                                               stop_price=float(rec["stop"]), note="disaster stop"))
                 _journal_append({"kind": "stop_submitted", "symbol": sym, "order_id": oid})
-            print(f"  filled: {system} {sym} x{rec['qty']} -> lot opened, stop placed")
+            px = f" @ {fill_px}" if fill_px else ""
+            print(f"  FILLED: {system} {sym} x{filled_qty or rec['qty']}{px} -> lot opened, stop placed")
+        elif status in ("new", "accepted", "partially_filled", "pending_new"):
+            _journal_append({"kind": "pending_entry", **{k: rec[k] for k in
+                             ("system", "symbol", "qty", "limit", "stop", "order_id")
+                             if k in rec}})  # still live (intraday run) — carry forward
+            print(f"  still resting: {system} {sym} ({status})")
         else:
-            _journal_append({"kind": "pending_expired", "symbol": sym})
-            print(f"  expired unfilled: {system} {sym} (no chase — by design)")
+            _journal_append({"kind": "pending_expired", "symbol": sym, "status": status})
+            print(f"  expired unfilled: {system} {sym} ({status}; no chase — by design)")
 
     # 2. plan today
     prov = YFinanceProvider()
