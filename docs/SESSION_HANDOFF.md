@@ -74,8 +74,11 @@ uv run python scripts/signals_ibs_etf.py --equity 15000   # human-readable signa
 
 ## Backlog (queued, in priority order)
 1. Daily paper ops + first fill review (extend `paper_review.py` with realized-R once fills exist).
-2. Mining (user mandate, zero spend): ES small-gap fade (diag t=−2.02 but NQ disagrees),
-   crypto momentum (Alpaca, mind 25bps taker / maker option), overnight structures on 1m archive.
+2. Mining (user mandate, zero spend): **PEAD / earnings drift** (added 2026-06-11 — event
+   family, swing horizon, decades documented, third orthogonal mechanism vs IBS/TOM; earnings
+   dates + reaction via yfinance; pre-register before reading), crypto momentum (Alpaca, mind
+   25bps taker / maker option), overnight structures on 1m archive. Gap-fade: CLOSED
+   2026-06-11 (structural cost pre-verdict, see plan doc).
 3. ICT Phase E walk-forward on burned years (comparison baseline; no holdout).
 4. Step 6 proper: shared-capital risk layer, portfolio heat, automated scheduling of the loop.
 5. India: blocked on data/broker (user has neither yet).
