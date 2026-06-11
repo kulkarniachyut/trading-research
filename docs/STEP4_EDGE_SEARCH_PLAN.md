@@ -90,6 +90,19 @@ backtest, with thresholds fixed now:
   interim sanity at 6 events (sign only, no action).
 
 ## Run log
+- **2026-06-11 · gap-fade family: closed WITHOUT a build (structural cost pre-verdict).**
+  The diag §4 pocket (small ES gaps fade, t=−2.02) defines R = gap size. Small-tercile ES
+  gaps are ~0.05–0.10% (3–7 pts); two taker fills cost ~0.5–1 pt ⇒ **cost share 0.10–0.25R
+  per trade** — worse than ORB's 0.10R, which gross +0.09R could not survive. A gap-fade
+  gross edge of ~6 bps/day (the diag's own estimate) cannot clear that bar, and NQ shows the
+  *opposite* sign (continuation, t=+1.31) so cross-sectional consistency already fails.
+  Same closure rule as ORB: re-open only if costs change category, not for tuning.
+  Building/backtesting it would have spent a day to learn what two prior families already
+  proved about tight-stop intraday structures vs. friction.
+- **2026-06-11 · LIVE day 1 (paper):** 5/6 IBS fills (83% — inside the backtest's 81–94%),
+  4 with price improvement, 1 at-limit, XLV expired honestly (no chase). 5 positions live,
+  4 stops resting. XLB stop/journal + all further submissions HELD pending the user's
+  explicit go/stop on the paper operation (boundary question raised; manual-approval rule).
 - **2026-06-10 · TOM cross-asset confirmation (PRE-REGISTERED before the run):** same frozen
   rule on the Databento index futures (ES/NQ/YM/RTY micros, H1 base, 2017–2024 — independent
   data source; first TOM touch of any futures year). PASS = pooled exp > 0 post-cost AND
