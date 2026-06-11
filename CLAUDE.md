@@ -103,8 +103,11 @@ When compacting, always preserve:
   - [x] D — Events/News + macro-regime ✓ (VIX `block_risk_off`, FOMC/NFP `block_news_day` toggles).
         Verdict: both filters **hurt** — the setup is volatility-expansion and *likes* risk-off/news days
         (use as catalyst, not filter). None of SMT/regime/news lifts the breakeven edge.
-  - [ ] E — **Definitive run**: full setup (toggles) across all tickers/markets, 4–5yr, portfolio
-        walk-forward + Monte Carlo on the reserved **2025/26** holdout. (A–D scaffolding complete; this is the verdict.)
+  - [x] E — **Definitive run (2026-06-11): FAIL — mechanical ICT-2022 falsified.** Anchored WF
+        on burned years (16 equities, 2021→2024 folds): pooled OOS +0.005R, breadth 56%,
+        MC P(total≤0) = 49% (coin flip). The narrative redesign did not lift breakeven. Per the
+        pre-stated criterion (positive WF OOS required first), the **2025/26 holdout was NOT
+        spent**. Step 2.7 closed — a clean "no" is the deliverable.
 - [~] Step 4 — More strategies (momentum, mean-reversion) — **in progress, see
       `docs/STEP4_EDGE_SEARCH_PLAN.md`** (pivot decision 2026-06-10: ICT Phase E deferred,
       runs later as comparison baseline)

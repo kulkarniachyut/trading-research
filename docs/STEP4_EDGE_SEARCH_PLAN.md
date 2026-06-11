@@ -90,6 +90,12 @@ backtest, with thresholds fixed now:
   interim sanity at 6 events (sign only, no action).
 
 ## Run log
+- **2026-06-11 · ICT Phase E baseline (burned years only, holdout untouched): FAIL — closed.**
+  Fixed full ICT-2022 setup, anchored WF 2021→2024 on the 16-equity breadth universe:
+  pooled OOS **+0.005R**, 223 trades, breadth 56%, MC p5 −42R, **P(≤0)=49.0%** — pure coin
+  flip. Falsifies mechanical ICT-2022 per the Phase E criterion without spending the holdout.
+  Baseline context: the live two-system portfolio is +9.4R/yr at P(luck)=0.7% on the same
+  truth machine — the pivot decision is vindicated quantitatively.
 - **2026-06-11 · gap-fade family: closed WITHOUT a build (structural cost pre-verdict).**
   The diag §4 pocket (small ES gaps fade, t=−2.02) defines R = gap size. Small-tercile ES
   gaps are ~0.05–0.10% (3–7 pts); two taker fills cost ~0.5–1 pt ⇒ **cost share 0.10–0.25R
