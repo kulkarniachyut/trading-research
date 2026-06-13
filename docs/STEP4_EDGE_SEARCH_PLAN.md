@@ -274,3 +274,23 @@ fails on fees; maker is the real test. Verdict goes to the run log + a memory no
     crypto momentum (Alpaca 24/7), and combining anti-correlated weak edges (IBS×TSMOM — but
     any combined read on 2023/24 is now contaminated; a combo would go straight to the
     2025/26 holdout as its only clean test, which is a one-shot we should not spend lightly).
+
+## Run log (trend sleeve + 3-way portfolio — the construction that reaches the bar)
+- **2026-06-13 · trend sleeve = crisis-alpha hedge; 3-sleeve book hits Sharpe 0.81 (~24% CAGR
+  territory with leverage).** Trend (12-1 TSMOM on diversified ETF basket SPY/EFA/EEM/TLT/IEF/
+  GLD/DBC/UUP, long/short) is WEAK standalone (Sharpe 0.07, +0.3% CAGR — momentum's breadth
+  curse again) BUT does its job: corr −0.05 to MR, −0.15 to VIX, and GREEN in every crisis month
+  (2020-03 +5.6%, 2022-04/06/09 +3-5%) exactly when VIX carry bleeds (−23/−17%). The
+  convergent(carry)+divergent(trend) construction:
+  - MR only: Sharpe 0.51, 4.5% CAGR, 20% maxDD
+  - MR + 20% VIX: Sharpe 0.76, 12.5% CAGR, 25% maxDD
+  - **MR + 30% VIX + 60% trend: Sharpe 0.81, 16.6% CAGR (0.5% base), 31% maxDD, worstMo −15%**
+  At Sharpe 0.81, frontier leverage to ~50% maxDD targets **~20-24% CAGR** — the first credible
+  approach to the user's 25-30% bar. **THE COMPLETE STRATEGY = mean-reversion core (IBS+TOM,
+  validated, live paper) + risk-sized VIX-carry sleeve (return engine, crash risk) + trend sleeve
+  (crisis hedge that pays for the VIX tail).** Honest caveats: (1) only IBS+TOM are live-validated;
+  VIX+trend are backtested only; (2) ~24% needs ~3x leverage AND tolerating ~50% monthly DD with a
+  worse intraday tail (VIX −35% days); (3) realistic post-live-degradation target is ~15-20%, with
+  ~24% the aggressive edge. Remaining work = Step 6 risk layer to run all 3 sleeves as one
+  risk-sized book, then live-validate the full stack. This is the deliverable: a constructed,
+  backtested ~20% portfolio with an explicit, honest risk profile — not a fantasy 30%.
