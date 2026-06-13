@@ -84,11 +84,19 @@ def find_fvgs(htf: pd.DataFrame, allow_short: bool):
 
 
 def backtest(ltf: pd.DataFrame, htf: pd.DataFrame, rr: float, life_htf_bars: int,
-             cost_bp: float, allow_short: bool, htf_rule: str):
+             cost_bp: float, allow_short: bool, htf_rule: str,
+             bias_gate: bool = False, killzone: bool = False):
     fvgs = find_fvgs(htf, allow_short)
     htf_step = pd.Timedelta(htf_rule)
     lo_arr, hi_arr = ltf["low"].values, ltf["high"].values
     idx = ltf.index
+    # ICT layer 1 -- HTF bias: causal EMA50 on HTF close, mapped onto LTF bars (shifted to avoid peek)
+    ema = htf["close"].ewm(span=50, adjust=False).mean()
+    bias_htf = pd.Series(np.where(htf["close"] > ema, 1, -1), index=htf.index).shift(1)
+    bias_on_ltf = bias_htf.reindex(idx, method="ffill").values
+    # ICT layer 2 -- killzone hours (UTC): London 07-10, NY 12-16
+    kz_hours = {7, 8, 9, 12, 13, 14, 15}
+    hours = idx.hour.values
     trades = []
     for formed, direction, near, far in fvgs:
         # CAUSAL: a FVG using bars up to the one left-labeled `formed` is only KNOWN when that bar
@@ -112,6 +120,11 @@ def backtest(ltf: pd.DataFrame, htf: pd.DataFrame, rr: float, life_htf_bars: int
             if not entered:
                 # price retraces into zone: for bullish, low dips to <= near (top); for bearish, high >= near
                 if (direction == 1 and lo_arr[j] <= near) or (direction == -1 and hi_arr[j] >= near):
+                    # ICT aggregate gates (applied at the entry bar, causal):
+                    if bias_gate and bias_on_ltf[j] != direction:
+                        break  # HTF bias must align with the FVG direction
+                    if killzone and hours[j] not in kz_hours:
+                        continue  # wait for a killzone bar to take this setup
                     entered = True
                     continue  # enter at near (maker limit) at this bar; resolve from next bars
             else:
@@ -133,8 +146,10 @@ def backtest(ltf: pd.DataFrame, htf: pd.DataFrame, rr: float, life_htf_bars: int
 def main() -> None:
     htf_rule = _opt("--htf", "4h", str); rr = _opt("--rr", 1.5); life = _opt("--life", 12, int)
     cost_bp = _opt("--cost-bp", 4.0); allow_short = "--short" in sys.argv
+    bias_gate = "--bias-gate" in sys.argv; killzone = "--killzone" in sys.argv
+    layers = "".join([" +BIAS" if bias_gate else "", " +KILLZONE" if killzone else ""])
     print(f"=== MTF FVG  HTF={htf_rule} entry=15m  RR={rr} life={life}HTFbars  RT={cost_bp}bp  "
-          f"{'long+short' if allow_short else 'long-only'} ===")
+          f"{'long+short' if allow_short else 'long-only'}{layers} ===")
     design, oos = [], []
     per_coin = {}
     for sym in BASKET:
@@ -143,7 +158,8 @@ def main() -> None:
         except Exception as exc:  # noqa: BLE001
             print(f"  {sym}: {exc}"); continue
         htf = resample(ltf, htf_rule)
-        trades, fvgs = backtest(ltf, htf, rr, life, cost_bp, allow_short, htf_rule)
+        trades, fvgs = backtest(ltf, htf, rr, life, cost_bp, allow_short, htf_rule,
+                                bias_gate, killzone)
         # apply a flat cost in R: assume R averages ~0.6% of price for these gaps; cost_bp/ (R%*1e4)
         # use measured: cost in R = cost_bp/1e4 divided by typical risk fraction ~0.006 -> ~cost_bp/60 R
         cost_R = (cost_bp / 1e4) / 0.006
