@@ -117,11 +117,12 @@ _Goal: reach ~8-14 uncorrelated validated edges so combined Sharpe + leverage ca
 user's 25-30%/yr bar (see Strategic Reality above). Each candidate: pre-register pass criteria
 BEFORE looking, run through the truth machine, keep survivors, log negatives._
 1. Daily paper ops + first fill review (extend `paper_review.py` with realized-R once fills exist).
-2. **Crypto mean-reversion (NEXT BRICK — user explicitly requested BTC/ETH):** frozen-ish IBS on
-   BTC/ETH/etc via Alpaca crypto (24/7, free, already wired `AlpacaCryptoProvider`). MUST use a
-   realistic crypto cost model (~10-25bps taker — likely kills taker entry; test maker/limit).
-   24/7 also enables genuine *intraday* MR that equities can't (no PDT). Uncorrelated market =
-   high diversification value. Prior caution: B.5 found crypto-in-NY-window net-negative.
+2. **Crypto: TESTED 2026-06-13 (`scripts/run_ibs_crypto.py`).** IBS reversion FAILS (gross
+   −0.012R — no signal; crypto trends, doesn't revert). Momentum (TSMOM) direction CONFIRMED
+   (+0.038R) but MC P(luck) 27-47% — breadth-starved on 8 correlated coins × 4yr. No validated
+   crypto edge yet; blocker is breadth (needs more uncorrelated coins / longer history, or
+   intraday to multiply trade count). Crypto's character now known: TRENDING. Don't re-test
+   reversion; if revisiting, do momentum with more coins or an intraday horizon.
 3. **PEAD / earnings drift** — event-driven, swing horizon, decades documented, orthogonal
    mechanism. Earnings dates + reaction via yfinance; pre-register.
 4. **Cross-sectional momentum** — *negatively* correlated to mean-reversion (best diversifier
