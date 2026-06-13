@@ -33,19 +33,24 @@ class UniverseItem:
 
 
 def _engine_for(item: UniverseItem, initial_equity: float, risk_pct: float,
-                max_leverage: float) -> BacktestEngine:
+                max_leverage: float, passive_maker: bool = False) -> BacktestEngine:
+    maker = None
     if item.asset_class is AssetClass.FUTURE:
         market = Market("US", AssetClass.FUTURE, Product.FUTURES)
         model = cost_model("US", "future")
+        if passive_maker:  # resting limit: no taker spread/slippage, exchange fees remain
+            maker = cost_model("US", "future", half_spread_ticks=0.0, slippage_atr_mult=0.0)
     elif item.asset_class is AssetClass.CRYPTO:
         market = Market("US", AssetClass.CRYPTO, Product.INTRADAY)
         model = cost_model("US", "crypto")
     else:
         market = Market("US", AssetClass.EQUITY, Product.INTRADAY)
         model = cost_model("US", "equity")
+        if passive_maker:
+            maker = cost_model("US", "equity", half_spread_bps=0.0, slippage_atr_mult=0.0)
     inst = InstrumentSpec(item.symbol, market, multiplier=item.multiplier, tick_size=item.tick_size)
     return BacktestEngine(model, inst, initial_equity=initial_equity, risk_pct=risk_pct,
-                          max_leverage=max_leverage)
+                          max_leverage=max_leverage, maker_cost_model=maker)
 
 
 @dataclass
@@ -126,6 +131,7 @@ def run_portfolio(
     initial_equity: float = 100_000.0,
     risk_pct: float = 0.005,
     max_leverage: float = 4.0,
+    passive_maker: bool = False,
 ) -> PortfolioResult:
     """Run ``make_strategy()`` on every symbol in ``universe`` over ``[start, end]`` and aggregate.
 
@@ -149,7 +155,7 @@ def run_portfolio(
                 continue
             ref_sym = references.get(item.symbol)
             ref_bars = src.get_bars(ref_sym, base_tf, start, end) if ref_sym else None
-            eng = _engine_for(item, initial_equity, risk_pct, max_leverage)
+            eng = _engine_for(item, initial_equity, risk_pct, max_leverage, passive_maker)
             results[item.symbol] = eng.run(make_strategy(), bars, base_tf, reference_bars=ref_bars,
                                            regime_series=regime_series, news_calendar=news_calendar)
         except Exception as exc:  # noqa: BLE001 — one bad symbol must not kill the sweep

@@ -5,6 +5,6 @@ Buckets (folders): ``ict`` (ICT/SMC), then ``divergence`` (VuManChu), and later 
 mean-reversion / event. Add a strategy = drop a file in a bucket and decorate it.
 """
 
-from src.strategies import ict  # noqa: F401
+from src.strategies import ict, meanrev, momentum  # noqa: F401
 
-__all__ = ["ict"]
+__all__ = ["ict", "meanrev", "momentum"]

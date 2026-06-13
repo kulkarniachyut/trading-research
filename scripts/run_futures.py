@@ -30,8 +30,11 @@ FUT = [
 def _stat(ts: list) -> str:
     if not ts:
         return "  0 tr"
-    n = len(ts); w = sum(1 for t in ts if t.net_pnl > 0); net = sum(t.net_pnl for t in ts)
-    st = sum(1 for t in ts if t.reason_out == "stop"); tg = sum(1 for t in ts if t.reason_out == "target")
+    n = len(ts)
+    w = sum(1 for t in ts if t.net_pnl > 0)
+    net = sum(t.net_pnl for t in ts)
+    st = sum(1 for t in ts if t.reason_out == "stop")
+    tg = sum(1 for t in ts if t.reason_out == "target")
     return f"{n:3d} tr  {w / n * 100:3.0f}% win  net {net:9,.0f}  (stop {st}/tgt {tg})"
 
 

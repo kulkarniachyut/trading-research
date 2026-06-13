@@ -60,6 +60,7 @@ class BacktestEngine:
         risk_pct: float = 0.005,
         max_leverage: float = 1.0,
         atr_period: int = 14,
+        maker_cost_model: Optional[CostModel] = None,
     ) -> None:
         self.cost_model = cost_model
         self.instrument = instrument
@@ -67,6 +68,10 @@ class BacktestEngine:
         self.risk_pct = risk_pct
         self.max_leverage = max_leverage
         self.atr_period = atr_period
+        #: Costs for PASSIVE (resting-limit) fills: a maker pays no spread and no taker
+        #: slippage but still owes per-contract/cash fees. Defaults to the taker model so
+        #: limit entries are never *advantaged* unless the caller explicitly models it.
+        self.maker_cost_model = maker_cost_model or cost_model
 
     # --- public ------------------------------------------------------------
 
@@ -93,6 +98,7 @@ class BacktestEngine:
         trades: list[Trade] = []
         open_pos: Optional[_Open] = None
         pending_entry: Optional[Signal] = None
+        pending_ttl = 0          # bars a resting limit entry has left before it cancels
         pending_exit = False
 
         index = base_bars.index
@@ -102,15 +108,29 @@ class BacktestEngine:
             now = index[i] + base_dur  # close time of this bar
             slip_atr = float(atr.iloc[i - 1]) if i > 0 and not math.isnan(atr.iloc[i - 1]) else 0.0
 
-            # 1. act on what was queued last bar, at THIS bar's open.
+            # 1. act on what was queued last bar: market entries at THIS bar's open; resting
+            #    limit entries against THIS bar's range (gap-through at open, strict
+            #    trade-through at the limit, touch ≠ fill, cancel when the TTL runs out).
             if open_pos is not None and pending_exit:
                 trades.append(self._close(open_pos, bar["open"], now, i, "signal", slip_atr))
                 realized += trades[-1].net_pnl
                 open_pos, pending_exit = None, False
             elif open_pos is None and pending_entry is not None:
                 equity = self.initial_equity + realized
-                open_pos = self._open(pending_entry, bar, i, now, equity, slip_atr)
-                pending_entry = None
+                if pending_entry.limit is None:
+                    open_pos = self._open(pending_entry, float(bar["open"]), i, now, equity,
+                                          slip_atr, passive=False)
+                    pending_entry = None
+                else:
+                    fill_px = self._limit_fill(pending_entry, bar)
+                    if fill_px is not None:
+                        open_pos = self._open(pending_entry, fill_px, i, now, equity,
+                                              slip_atr, passive=True)
+                        pending_entry = None
+                    else:
+                        pending_ttl -= 1
+                        if pending_ttl <= 0:
+                            pending_entry = None  # never pulled back — the signal expires
 
             # 2. manage the open position against this bar's range (intrabar stop/target).
             if open_pos is not None:
@@ -133,12 +153,24 @@ class BacktestEngine:
             ctx._update(now, float(bar["close"]), position, account)
             signal = strategy.on_bar(ctx)
 
-            # 5. queue the order for next-bar-open execution.
+            # 5. queue the order: market -> next-bar-open; limit -> rests for ttl_bars.
+            #    A fresh entry signal replaces any still-resting limit.
             if signal is not None:
                 if open_pos is None and signal.side in ("long", "short"):
                     pending_entry = signal
+                    pending_ttl = max(1, int(signal.ttl_bars))
                 elif open_pos is not None and signal.side == "flat":
                     pending_exit = True
+
+        # End of data: mark any open position to the last close as a real (cost-bearing) exit.
+        # Silently dropping it censors slow strategies — their multi-month winners are exactly
+        # the trades still open at a span boundary (walk-forward folds chop on calendar years).
+        if open_pos is not None and len(base_bars):
+            last = base_bars.iloc[-1]
+            trades.append(self._close(open_pos, float(last["close"]), index[-1] + base_dur,
+                                      len(base_bars) - 1, "end_of_data", slip_atr))
+            realized += trades[-1].net_pnl
+            open_pos = None
 
         equity_curve = pd.Series(equity_values, index=pd.DatetimeIndex(equity_times), name="equity")
         return Result(
@@ -154,18 +186,38 @@ class BacktestEngine:
 
     # --- order execution ---------------------------------------------------
 
-    def _open(self, sig: Signal, bar: pd.Series, i: int, now: datetime, equity: float, atr: float) -> Optional[_Open]:
-        ref = float(bar["open"])
+    def _open(self, sig: Signal, ref: float, i: int, now: datetime, equity: float, atr: float,
+              *, passive: bool = False) -> Optional[_Open]:
+        """Open at reference price ``ref`` (a market fill at the bar open, or a limit fill).
+        Passive fills are costed by ``maker_cost_model`` (no taker spread/slippage)."""
         qty = self._size(equity, ref, sig.stop)
         if qty <= 0:
             return None
         side = sig.side
         fc = FillContext("buy" if side == "long" else "sell", qty, ref, self.instrument, atr=atr)
-        res = self.cost_model.apply(fc)
+        res = (self.maker_cost_model if passive else self.cost_model).apply(fc)
         return _Open(
             side=side, qty=qty, entry_fill=res.fill_price, entry_ref=ref, entry_ts=now, entry_i=i,
             entry_cash=res.cash_cost, stop=sig.stop, target=sig.target, reason_in=sig.reason,
         )
+
+    @staticmethod
+    def _limit_fill(sig: Signal, bar: pd.Series) -> Optional[float]:
+        """Price a resting limit fills at against one bar, or None.
+
+        Conservative by construction: a gap through the limit fills at the (better) open;
+        an intrabar *trade-through* (strictly beyond the limit) fills at the limit; a bar that
+        merely touches the limit does NOT fill — queue position at the touch is unknowable.
+        """
+        lim = float(sig.limit)  # type: ignore[arg-type]
+        o = float(bar["open"])
+        if sig.side == "long":
+            if o < lim:
+                return o
+            return lim if float(bar["low"]) < lim else None
+        if o > lim:
+            return o
+        return lim if float(bar["high"]) > lim else None
 
     def _close(self, pos: _Open, ref_price: float, now: datetime, i: int, reason: str, atr: float) -> Trade:
         fc = FillContext("sell" if pos.side == "long" else "buy", pos.qty, ref_price, self.instrument, atr=atr)

@@ -71,6 +71,12 @@ class Signal:
     target: Optional[float] = None
     reason: str = ""
     meta: dict[str, Any] = field(default_factory=dict)
+    #: Passive entry: rest a limit at this price instead of taking the next bar's open.
+    #: Fill rules (engine, conservative): gap-through fills at the open, strict trade-through
+    #: fills at the limit, a mere *touch* does NOT fill, unfilled after ``ttl_bars`` cancels.
+    limit: Optional[float] = None
+    #: How many base bars the resting limit lives before it is cancelled.
+    ttl_bars: int = 1
 
 
 @dataclass(slots=True)

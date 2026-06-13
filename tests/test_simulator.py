@@ -145,3 +145,38 @@ def test_sizing_is_capped_by_max_leverage():
     res = eng.run(BuyOnce(stop_off=0.01, tgt_off=1.0), data, TimeFrame.M5)
     assert len(res.trades) == 1
     assert res.trades[0].qty == 1000
+
+
+def test_open_position_marked_to_market_at_end_of_data() -> None:
+    """A position still open when data ends must be closed at the last bar's close
+    (reason 'end_of_data'), not silently dropped — censoring biases slow strategies."""
+    import pandas as pd
+
+    from src.backtest.costs import AssetClass, InstrumentSpec, Market, Product, cost_model
+    from src.backtest.simulator import BacktestEngine
+    from src.core.types import Signal, TimeFrame
+    from src.strategies.base import BaseStrategy
+
+    class EnterAndHold(BaseStrategy):
+        name = "enter_and_hold_test"
+        required_timeframes = [TimeFrame.M5]
+
+        def on_bar(self, ctx):
+            if ctx.position.qty == 0 and len(ctx.bars(TimeFrame.M5)) == 1:
+                return Signal(timestamp=ctx.now, symbol="TEST", side="long",
+                              stop=ctx.price - 50.0)  # far stop — never hit
+            return None
+
+    idx = pd.date_range("2022-03-08 09:30", periods=10, freq="5min", tz="America/New_York")
+    px = [100.0 + 0.1 * i for i in range(10)]
+    bars = pd.DataFrame({"open": px, "high": [p + 0.05 for p in px],
+                         "low": [p - 0.05 for p in px], "close": [p + 0.02 for p in px],
+                         "volume": 1000.0}, index=idx)
+    inst = InstrumentSpec("TEST", Market("US", AssetClass.EQUITY, Product.INTRADAY))
+    eng = BacktestEngine(cost_model("US", "equity"), inst, initial_equity=100_000.0)
+    res = eng.run(EnterAndHold({}), bars, TimeFrame.M5)
+
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.reason_out == "end_of_data"
+    assert t.exit_ts == idx[-1] + pd.Timedelta(minutes=5)
