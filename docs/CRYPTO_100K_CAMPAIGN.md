@@ -14,13 +14,22 @@ systematic premiums — and they are uncorrelated to each other (the basis of re
    it EXISTS: Deribit BTC DVOL mean 43.7% vs RV30 39.2% ⇒ **+4.5 vol pts IV-RV**, ~400d. Uncorrelated
    to carry. **RIGOR PASS (short-variance daily P&L, 700d): premium is real (77% win-days, standalone
    Sharpe ~1.05) BUT TAIL-DOMINATED — the single worst day wipes ~278 days of premium.** ⇒ naked
-   short-vol is UNINVESTABLE (one spike = ruin; the user has prior losses). **State: real but must be
-   harvested via DEFINED-RISK structures only** (iron condors / credit spreads, capped max loss +
-   tail hedge) — caps the steamroller, shrinks the premium. Needs Deribit options-chain infra +
-   structure/Greeks sim. A careful build, NOT naked straddles.
-Everything DIRECTIONAL (momentum/reversion) is dead. **A real crypto book = CARRY + VOL, each
-regime/vol-gated, sized ≤2-3x, stacked when both are live.** That's the survivable-aggressive
-machine — not 10x, but a genuine two-engine system. Next build: the VOL sleeve (backlog #3).
+   short-vol is UNINVESTABLE (one spike = ruin; the user has prior losses). **DEFINED-RISK TEST
+   (capped-loss iron condor, first-pass): goes NEGATIVE (−40% to −181% ann) once wings are paid for**
+   — because crypto's high IV makes tail protection expensive, and the tail IS where the premium
+   lives. So: naked = blows up; cheaply-hedged = doesn't pay. **State: real premium but NOT a clean,
+   safe sleeve for a cautious 2-3x account.** Only a sophisticated delta-hedged variance harvest with
+   strict sizing might extract some — high effort, still risky. Demoted from "easy 2nd sleeve" to
+   "hard, conditional." (Caveat: crude 1-day model, no delta-hedge, calm 700d window.)
+Everything DIRECTIONAL (momentum/reversion) is dead. **SOBER CONCLUSION after testing both premiums:
+crypto offers NO easy, safe, live edge for a cautious 2-3x account RIGHT NOW.** Carry is the one
+clean edge but it is regime-gated and currently compressed (monitor: STAND ASIDE). Vol is real but
+hard/dangerous to harvest safely (naked blows up, hedged doesn't pay). The disciplined, capital-
+protecting play = **PATIENCE: run `carry_regime_monitor.py` weekly; deploy the (already-built) carry
+sleeve at 2-3x the moment funding fattens; treat vol as a later, sophisticated R&D project.** This
+is the opposite of forcing trades in a dead regime — exactly the discipline that prevents repeating
+past losses. The truth machine's hardest, most valuable message: don't trade crypto for its own sake
+right now; wait for the regime with a concrete trigger in hand.
 
 ## GO-WIDE research synthesis (2026-06-13) — the crypto edge landscape
 Hard research pass across exchanges/tickers/strategies (X, quant blogs, BIS WP1087 "Crypto carry",
