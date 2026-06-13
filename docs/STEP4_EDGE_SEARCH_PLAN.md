@@ -274,3 +274,26 @@ fails on fees; maker is the real test. Verdict goes to the run log + a memory no
     crypto momentum (Alpaca 24/7), and combining anti-correlated weak edges (IBS×TSMOM — but
     any combined read on 2023/24 is now contaminated; a combo would go straight to the
     2025/26 holdout as its only clean test, which is a one-shot we should not spend lightly).
+
+## Pairs / stat-arb — PRE-REGISTERED (2026-06-13, before the run)
+Go-wide brick #8, the MARKET-NEUTRAL diversifier (vs VIX which adds crash risk). Dollar/beta-
+neutral spread reversion on 7 economically-related ETF pairs (XLF/XLK, XLE/XOP, GLD/SLV, SPY/QQQ,
+IEF/TLT, EFA/EEM, XLP/XLU), rolling hedge ratio, z-entry 2 / exit 0.5 / stop 3.5, 60d window,
+2010-2024. PASS = pooled post-cost positive AND |corr to SPY| < 0.3 (truly market-neutral) AND
+≥4/7 pairs positive AND MC p5 ≥ 0 AND first-half positive. Honest prior: classic pairs edges
+largely decayed post-2010 (arbitraged); a clean null is the expected/fine outcome. If it PASSES,
+it raises the SAFE ceiling (no crash beta) — the missing piece the 2-edge frontier needs.
+
+## Run log (pairs) + EDGE-SEARCH CONCLUSION
+- **2026-06-13 · pairs / stat-arb (7 ETF pairs, 2010-24): FAIL — decayed.** Pooled −1.0%/yr,
+  Sharpe −0.44, 5/7 pairs negative, MC P(≤0)=95%. corr(SPY)=−0.39 (it IS market-neutral, but
+  loses money so neutrality is moot). Only IEF/TLT shows a flicker (Sharpe 0.43 — bond pairs
+  less arbitraged). Confirms the documented post-2010 pairs decay. No crash-riskless ceiling-
+  lifter found.
+- **EDGE-SEARCH CONCLUSION (8 mechanisms tested this campaign, robust & stable):**
+  WORK on small retail universes → mean-reversion (IBS, TOM): VALIDATED, ~13% CAGR ceiling.
+  Lift the ceiling only WITH crash risk → VIX-carry (return) + trend (hedge): ~20% at ~50% DD.
+  FAIL → momentum (futures/crypto/cross-sectional — breadth), pre-holiday (decayed), pairs
+  (decayed), crypto-reversion (no signal), ORB/ICT (cost). **The honest, complete map: retail
+  on $10-20K can have a VALIDATED ~13% (safe) or a DESIGNED ~20% (crash risk); true 25-30%
+  requires institutional infrastructure/breadth retail can't access. This is the deliverable.**
