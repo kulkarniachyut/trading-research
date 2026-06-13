@@ -89,7 +89,32 @@ backtest, with thresholds fixed now:
 - TOM judged separately at 12 window-events (~1 year) against +0.057R ± same-σ logic;
   interim sanity at 6 events (sign only, no action).
 
+## Crypto mean-reversion — PRE-REGISTERED (written 2026-06-13, before the run)
+First go-wide brick toward the multi-edge portfolio (user explicitly requested BTC/ETH).
+Frozen IBS rule (0.2/0.8/MA200/5d/3-ATR, long-only) on daily crypto bars, 8-coin universe
+(BTC ETH LTC BCH SOL AVAX LINK DOGE) via Alpaca (24/7, free, keyless history ~2021+).
+**Realistic crypto cost is the whole question** — taker ~0.10–0.25%/side (10–25bps) vs
+equities' ~1bp. Run BOTH: (a) taker/market entry, (b) maker/limit entry (passive, the IBS-on-
+equities lesson). PASS = pooled exp > 0 post-cost AND ≥4/8 coins positive AND MC p5 ≥ 0.
+Honest caveats accepted up front: only ~4yr history, coins are highly cross-correlated (weak
+independent breadth), prior B.5 result was crypto-in-NY-window negative. Expectation: taker
+fails on fees; maker is the real test. Verdict goes to the run log + a memory note either way.
+
 ## Run log
+- **2026-06-13 · crypto IBS (BTC/ETH/+6, 2021-24): FAIL — and the failure is diagnostic.**
+  Pooled **−0.086R** both taker and maker (321 tr), **gross −0.012R** (negative BEFORE costs),
+  0/7 coins positive, all 4 years negative, MC P(≤0)=100%. Unlike equity-IBS (gross +0.038R,
+  costs the question), here the **signal itself has no edge** — maker≈taker proves friction
+  isn't the cause. **Daily crypto does not mean-revert; it trends.** This is the go-wide
+  program working: a clean no that *redirects* — the next crypto brick should be MOMENTUM/
+  trend (sign-of-k-day-return, à la TSMOM), not reversion. IBS confirmed equity-index-specific.
+- **2026-06-13 · crypto MOMENTUM (TSMOM on same 8 coins, 2021-24): direction CONFIRMED,
+  robustness FAILS.** Flipping reversion→momentum flips expectancy −0.086R→**+0.038R** (30d
+  lookback), 4/7 coins positive — proving the diagnosis (crypto trends). BUT MC P(≤0)=27-47%
+  across 30/60/90d: 8 cross-correlated coins × 4yr = too little independent breadth, the SAME
+  wall futures-TSMOM hit on 9 markets. **Parked, not validated.** Net crypto takeaway: its
+  character is now known (trending, not reverting), which de-risks future crypto work, but no
+  validated crypto edge yet — breadth (more uncorrelated coins / longer history) is the blocker.
 - **2026-06-11 · ICT Phase E baseline (burned years only, holdout untouched): FAIL — closed.**
   Fixed full ICT-2022 setup, anchored WF 2021→2024 on the 16-equity breadth universe:
   pooled OOS **+0.005R**, 223 trades, breadth 56%, MC p5 −42R, **P(≤0)=49.0%** — pure coin
