@@ -26,15 +26,28 @@ regime fattens (redeploy trigger = basket funding/basis back to elevated). Keep 
 an ongoing program.** This is regime patience, not inaction — exactly the discipline a prior-losses
 trader needs.
 
-## Go-wide backlog (prioritized, evidence-ranked)
-1. **Carry regime monitor** — a daily script that tracks basket perp-funding + 3M basis level and
-   fires a "carry is fat again, deploy" signal. Converts "wait for regime" into an actionable trigger.
-2. **Dated-futures basis backtest** — Binance USDT quarterly futures cash-and-carry; the higher-
-   Sharpe sibling of perp carry, also currently compressed but the cleaner instrument when fat.
-3. **Vol-selling / implied-realized** — biggest untested edge; needs Deribit options data + infra.
-4. **Cross-venue on long-tail perps** — where the 20-60% lives; gated on liquidity/risk diligence.
+## Go-wide backlog (prioritized, evidence-ranked) — UPDATED after the basis diagnostic
+1. ✅ **Carry regime monitor** (`carry_regime_monitor.py`) — DONE. Live deploy/stand-aside alarm;
+   today STAND ASIDE (basket funding +3.7%/yr). Un-parks carry when the regime fattens.
+2. ~~Dated-futures basis backtest~~ → **DIAGNOSED, NOT a new sleeve.** Binance continuous-quarter
+   basis vs spot 2021-2024: same regime as perp funding (2021 +2.2% / 2022 +0.1% / 2024 +1.5% raw),
+   **corr to perp funding +0.66** → it is the SAME carry premium in a different instrument, not a
+   diversifier. Keep only as an ALTERNATIVE carry execution (hold-to-convergence, lower liquidation
+   risk) for when carry is fat — no separate edge. Currently compressed (raw ~0.1%).
+3. **Vol-selling / implied-realized (variance-risk premium)** — NOW THE TOP uncorrelated candidate:
+   a genuinely different premium from carry (vol risk vs leverage cost), the only thing likely
+   uncorrelated to the carry family. Needs Deribit options/DVOL data + infra. Sharpe ~2.4 documented.
+4. **Cross-venue on long-tail perps** — where the 20-60% lives; gated on liquidity/exchange-risk
+   diligence (majors measured too thin: ~3-5% gross, < net after sign-flip fees).
 5. **Live build** — Binance carry executor (2-3x cross-margin, flatten-when-funding<0, swift exits)
-   — build the plumbing during the low regime so it's ready when carry fattens.
+   — build the plumbing during the low regime so it's ready when the monitor flips to DEPLOY.
+
+**Sharpened go-wide reality:** the entire carry FAMILY (perp funding, dated basis, cross-venue) is
+ONE correlated premium (cost of leverage to longs) — corr ~0.66+ — currently compressed. Stacking
+within the family does NOT diversify. Genuine diversification requires a DIFFERENT premium: vol
+(variance-risk) is the leading untested one. Until a 2nd uncorrelated premium is found, the crypto
+book is effectively a single regime-gated carry bet — which is why the goal needs patience for the
+regime, not more carry variants.
 
 ## The goal, stated honestly
 User goal: **$10K → $100K in 1 year = 10x / +900%.** This is pursued hard, but the math is fixed:
