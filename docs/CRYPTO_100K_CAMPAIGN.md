@@ -83,6 +83,17 @@ realistic stretch ~30-60%/yr with eyes open on a real drawdown — NOT a fantasy
   deaths). The ONE monetizable edge is market-neutral funding CARRY (+7.4%). Go-wide in crypto =
   carry variants + sizing/risk overlays, NOT more directional/reversion signals.
 
+- **2026-06-13 · funding-carry OOS HOLDOUT (`validate_carry_oos.py`, 2025-01-01..2026-06-13,
+  user-authorized one-shot): DECAYED — regime-gated on the funding LEVEL.** Basis-aware net basket
+  **+0.8% APY** (2025 +1.4%, 2026 YTD −0.4%) vs IS +7.4% → ~85% decay; 7/9 coins barely positive
+  (SOL/AVAX negative). Cause: funding compressed in the current neutral/low-leverage regime (BTC
+  funding now annualizes ~0.6% vs the 2021-24 mean). The +7.4% was earned in high-funding eras
+  (2021 euphoria, 2024 recovery). **VERDICT: carry is REAL but REGIME-DEPENDENT; do NOT deploy
+  capital now (+0.8% × 2-3x ≈ 2%/yr, not worth the op risk). PARKED per user.** Redeploy TRIGGER:
+  basket funding back to elevated levels (a funding-LEVEL gate is the natural refinement — only run
+  carry when funding is fat; stand aside otherwise). The truth machine prevented a live deploy into
+  a dead regime. 2025/26 funding now spent for carry (OOS one-shot).
+
 ## Realistic target math (CORRECTED with the basis-aware number)
 - Carry core unlevered: **~7.4% APY, ~0% DD, Sharpe ~7** (was naively ~15%).
 - Carry core at user's 2-3x cap: **~15-22% APY**, DD still small (basis-bounded, not price).
