@@ -112,6 +112,16 @@ limit at gap edge), stop at far edge, 1.5R target. `run_mtf_fvg.py`.
   Lesson reinforced: distrust spectacular backtests, hunt the bug, verify causality. Truth machine
   worked. Closes the FVG-MTF idea; same likely fate awaits naive VMC/IBS/ORB MTF (left-label trap).
 
+## Crypto ORB + the user's full named list, closed with evidence
+- **Crypto ORB (`run_crypto_orb.py`, UTC-day opening range, causal): FAIL.** OR = first 60min of
+  UTC day, breakout long/short, RR target, taker 6bp. All variants negative both periods, 0/9 coins
+  (−0.07 to −0.17R). Same as the futures ORB retirement — breakouts whipsaw, gross can't clear cost.
+- **USER'S NAMED LIST (ORB/IBS/VMC/ICT) now all tested on crypto, causally:** ORB fail · IBS fail
+  (no daily reversion) · VMC breakeven (parallel workstream) · ICT/FVG-MTF look-ahead→negative.
+  Combined with the go-wide families (momentum, xsec, carry, vol, basis, seasonality, intraday MR),
+  the crypto edge space is exhaustively mapped: ONE real edge (carry, parked/regime-gated), all else
+  dead/decayed/look-ahead. Conclusion is robust and complete.
+
 ## Other ideas tested (go-wide breadth)
 - **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead
   regime.** Gating entry to "own funding ann ≥10%" leaves the book in-market only 4% of the time,
