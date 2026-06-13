@@ -69,6 +69,20 @@ realistic stretch ~30-60%/yr with eyes open on a real drawdown — NOT a fantasy
   margin (the +177% single-bar "adverse move" is a thin early-listing kline artifact, moot for a
   delta-neutral book). **CORE engine, corrected: ~7.4% unlevered / ~0% DD / Sharpe ~7.**
 
+- **2026-06-13 · crypto intraday hourly reversion DIAGNOSTIC: PARKED (sub-fee).** H1 2021-2024,
+  6 coins: mean lag-1 autocorr −0.027 (barely reverting); strongest next-hour signal SOL +8bp /
+  DOGE +4.5bp after a down hour — dwarfed by 10-20bp crypto round-trip taker fees (ORB lesson
+  again). Reversion concentrates in alts (DOGE −0.088) vs majors (BTC ≈ 0). No build.
+- **2026-06-13 · funding-as-contrarian-signal DIAGNOSTIC: NO EDGE (it's pro-momentum).** Bucketed
+  forward-24h perp return by funding quintile, 9 coins: high funding → HIGHER forward return
+  (+178bp vs +49bp low) — the opposite of the fade thesis. Positioning is momentum, not reversion.
+  Reinforces the theme: crypto trends in every dimension; only the market-neutral CARRY monetizes
+  it. No build.
+- **THEME (2026-06-13): crypto resists mean-reversion at every horizon/dimension tested** (daily
+  IBS, intraday hourly, funding-fade — all dead) AND **trend can't be traded** (breadth+fees, 4
+  deaths). The ONE monetizable edge is market-neutral funding CARRY (+7.4%). Go-wide in crypto =
+  carry variants + sizing/risk overlays, NOT more directional/reversion signals.
+
 ## Realistic target math (CORRECTED with the basis-aware number)
 - Carry core unlevered: **~7.4% APY, ~0% DD, Sharpe ~7** (was naively ~15%).
 - Carry core at user's 2-3x cap: **~15-22% APY**, DD still small (basis-bounded, not price).
