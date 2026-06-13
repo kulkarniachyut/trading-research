@@ -53,6 +53,17 @@ regime fattens (redeploy trigger = basket funding/basis back to elevated). Keep 
 an ongoing program.** This is regime patience, not inaction — exactly the discipline a prior-losses
 trader needs.
 
+## Other ideas tested (go-wide breadth)
+- **Crypto seasonality DIAGNOSTIC (basket daily 2021-2024): WEAK, no clean edge.** Day-of-week: only
+  Saturday significant (+48bp, t=2.32) — likely multiple-comparisons noise across 7 days. Turn-of-
+  month +70bp vs +19bp rest (t=1.80) — directionally replicates the validated EQUITY TOM but sub-
+  threshold on 4yr AND beta-contaminated (directional, not market-neutral). No weekend effect.
+  Suggestive TOM only; not validatable. Reinforces: no clean market-neutral crypto retail edge but carry.
+- **Paper harness shipped (`carry_paper.py`): SAFE, no real orders** — honors "paper trade until
+  then." Logs daily DEPLOY/STAND-ASIDE + would-be delta-neutral book (≤3x cap) + paper-equity to
+  `data/crypto_paper_journal.jsonl`. Currently STAND_ASIDE (funding +3.4%). Template for the real
+  executor.
+
 ## Go-wide backlog (prioritized, evidence-ranked) — UPDATED after the basis diagnostic
 1. ✅ **Carry regime monitor** (`carry_regime_monitor.py`) — DONE. Live deploy/stand-aside alarm;
    today STAND ASIDE (basket funding +3.7%/yr). Un-parks carry when the regime fattens.
