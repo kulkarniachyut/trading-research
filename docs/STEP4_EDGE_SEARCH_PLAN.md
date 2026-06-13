@@ -274,3 +274,29 @@ fails on fees; maker is the real test. Verdict goes to the run log + a memory no
     crypto momentum (Alpaca 24/7), and combining anti-correlated weak edges (IBS×TSMOM — but
     any combined read on 2023/24 is now contaminated; a combo would go straight to the
     2025/26 holdout as its only clean test, which is a one-shot we should not spend lightly).
+
+## VIX term-structure / short-vol — PRE-REGISTERED (2026-06-13, before the run)
+Go-wide brick #6, the highest-Sharpe retail edge and structurally uncorrelated to mean-reversion.
+VIX futures are in contango ~80% of days → long-vol ETFs (VIXY) bleed → shorting them harvests
+roll yield. RISK-MANAGED rule (the whole point): short VIXY only when VIX < VIX3M (contango,
+signal from prior close, no look-ahead); FLAT when VIX ≥ VIX3M (backwardation = stress, the
+filter meant to dodge Feb-2018 "volmageddon"). 2011-2024, costs: ~3%/yr borrow + 3bps/switch.
+PASS = post-cost positive AND Sharpe > 0.7 (must beat the 2-edge 0.52 to be worth the tail risk)
+AND survives 2018+2020 with maxDD < 40% AND MC p5 ≥ 0. HONEST CAVEAT up front: short-vol has
+catastrophic left-tail (XIV went to zero in one day, Feb 2018); a high Sharpe with a ruinous
+single-day drawdown is a FAIL, not a pass — the contango filter must actually prevent the blowup.
+
+## Run log (VIX carry)
+- **2026-06-13 · VIX short-vol carry (contango-filtered, 2011-24): the first real ceiling-lifter,
+  but it carries crash risk.** Standalone: CAGR **+31.5%**, Sharpe **0.77**, all 4 eras positive,
+  MC survives — BUT maxDD **64.5%** and **−33% single days** (Jun-2020, Aug-2024) → FAILS the
+  pre-registered standalone gate (maxDD<40%). The contango filter helps materially (vs always-
+  short: 92%→64% maxDD, Sharpe 0.60→0.77) but does NOT tame the tail. **Verdict: not a standalone
+  edge; valuable only as a small risk-sized SLEEVE.** Combination test (MR portfolio + sized VIX
+  sleeve): lifts combined **Sharpe 0.52 → 0.77**, CAGR (at 0.5% base) 4.3%→15.8% at a 30% sleeve;
+  with frontier leverage, ~20% CAGR at ~50% maxDD becomes reachable — the realistic ceiling-raise.
+  **CRITICAL CAVEAT: corr(MR, VIX-carry) = +0.46 — they CO-CRASH** (both short-disaster), and the
+  VIX sleeve's −33% single days mean monthly maxDD understates the true intraday tail. This is
+  carry-for-crash-risk, the exact mechanism that vaporized XIV (Feb-2018). It RAISES expected
+  return but FATTENS the left tail. Sizing it is a risk-appetite decision, not a free lunch.
+  Net for the program: first credible path to ~15-20% — via taking on explicit crash exposure.
