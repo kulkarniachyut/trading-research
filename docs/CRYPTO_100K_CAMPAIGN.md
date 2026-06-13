@@ -54,6 +54,13 @@ an ongoing program.** This is regime patience, not inaction — exactly the disc
 trader needs.
 
 ## Other ideas tested (go-wide breadth)
+- **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead
+  regime.** Gating entry to "own funding ann ≥10%" leaves the book in-market only 4% of the time,
+  net ~0% (vs all-in +0.8%); ≥20% never triggers. Fat-funding pockets in a low-carry regime are too
+  rare/brief and the basis give-back + fees eat them. Live snapshot DOGE/ADA at +11% ann are
+  transient single-interval blips, not sustained (the rolling gate correctly ignores them).
+  ⇒ dispersion does NOT create a deployable edge now; STAND-ASIDE confirmed from every angle.
+
 - **Crypto seasonality DIAGNOSTIC (basket daily 2021-2024): WEAK, no clean edge.** Day-of-week: only
   Saturday significant (+48bp, t=2.32) — likely multiple-comparisons noise across 7 days. Turn-of-
   month +70bp vs +19bp rest (t=1.80) — directionally replicates the validated EQUITY TOM but sub-
