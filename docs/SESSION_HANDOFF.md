@@ -5,10 +5,43 @@ trail) and CLAUDE.md build status. Live-experiment record committed at
 `data/paper_journal.jsonl`._
 
 ## TL;DR — where we are
-**Two validated systems are LIVE in Alpaca paper trading since 2026-06-10.** Week 1 complete:
-5/6 IBS entries filled, all 5 positions currently green (**+1.25% account, unrealized**), but
-**ZERO closed round-trips** — the pre-registered gates judge *realized* results at 60/120
-trades (~3 / ~6 months). The daily loop must be run each post-close (Runbook below).
+**Two validated systems are LIVE in Alpaca paper trading since 2026-06-10** + a full 3-sleeve
+~20% portfolio is DESIGNED (backtested) with its risk layer built. Week 1: 5/6 IBS entries
+filled, all 5 green (**+1.25% account, unrealized**), but **ZERO closed round-trips** — gates
+judge *realized* results at 60/120 trades (~3 / ~6 months). Daily loop runs each post-close.
+
+## Session 2026-06-13 output — the COMPLETE constructed strategy (6 PRs off main)
+The honest answer to the user's 25-30% bar, built this session. Branches/PRs (none merged yet):
+
+| PR | Branch | Result |
+|----|--------|--------|
+| #14 | `xsec-momentum` | cross-sectional momentum — FAIL (just beta / breadth) |
+| #15 | `fomc-drift` | pre-holiday effect — FAIL (arbitraged away post-2000) |
+| #16 | `portfolio-frontier` | **2-edge frontier: CAGR ceiling ~13% at any leverage** (proven) |
+| #17 | `vix-term-structure` | **VIX short-vol carry: Sharpe 0.77, +31% — but 64% DD, −35% days** |
+| #18 | `trend-overlay` | **trend crisis-hedge → 3-sleeve book Sharpe 0.81, ~20-24% target** |
+| #19 | `step6-allocator` | **risk layer: sleeve allocator (weights/leverage cap/DD breaker), 7 tests** |
+
+**THE CONSTRUCTED STRATEGY (3 sleeves, run as one risk-sized book via `src/execution/allocator.py`):**
+1. **Mean-reversion core** = IBS-limit + turn-of-month. VALIDATED (25yr, P(luck) 0.0%/2.5%), LIVE PAPER.
+   The reliable base. Standalone ceiling ~13% CAGR (PR #16).
+2. **VIX-carry sleeve** = short VIXY when VIX<VIX3M (contango). Sharpe 0.77, the return engine —
+   BUT carries crash risk (64% DD, −35% single days; XIV/volmageddon mechanism). Backtested only.
+3. **Trend sleeve** = 12-1 TSMOM on diversified ETF basket (SPY/EFA/EEM/TLT/IEF/GLD/DBC/UUP).
+   Weak standalone (Sharpe 0.07) but the CRISIS HEDGE: −0.05/−0.15 corr to MR/VIX, green every
+   crash month — pays for the VIX tail. Backtested only.
+- Combined (30% VIX + 60% trend on the MR core): **Sharpe 0.81, ~16.6% CAGR @ 0.5% base, 31% DD**;
+  with leverage to ~50% DD → **~20-24% CAGR**. Scripts: `run_portfolio_frontier.py`,
+  `run_vix_carry.py`, `run_trend_sleeve.py`.
+
+**HONEST GAP TO "PROVEN 25-30%" (neither closeable by code in one session):**
+- (a) **Live validation, calendar-bound**: only the MR core is live; VIX+trend need the same
+  paper gauntlet (months). No code compresses this.
+- (b) **User risk decision**: ~20% REQUIRES carrying crash risk (~50% DD, VIX −35% days). Do NOT
+  add the VIX sleeve to the live/paper book without the user explicitly opting into that risk.
+- Realistic post-degradation target ~15-20%; true 25-30% needs more uncorrelated edges still.
+- **META-FINDING:** momentum dies on breadth (3×: futures/crypto/xsec); mean-rev + calendar +
+  carry + trend-as-hedge work on small universes. Aim future edge-hunts there, not momentum.
 
 ## ⚠️ THE STRATEGIC REALITY (decided with the user 2026-06-13 — read before doing more)
 The validated edge is **real but small in dollars**: ~4.8%/yr at 0.5% risk/trade (~6 trades/wk,
