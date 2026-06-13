@@ -53,6 +53,24 @@ regime fattens (redeploy trigger = basket funding/basis back to elevated). Keep 
 an ongoing program.** This is regime patience, not inaction — exactly the discipline a prior-losses
 trader needs.
 
+## INTRADAY MOMENTUM (user redirect 2026-06-13: find intraday edge, target 25%+, not just carry)
+Reframe that reopened intraday: on Binance with MAKER/limit orders the fee bar is ~1-2bp, not the
+10-20bp taker I wrongly used to dismiss it. Diagnostic (`diag_crypto_intraday.py`, 1h, 2023-2026):
+crypto is intraday-MOMENTUM, not reversion — after a z>3 up-bar, +9.9bp next 1h / **+22.7bp/3h**
+continuation (n=1784); down-bars continue down; breakout +1.5bp (sub-cost); hour-of-day ~6bp swings.
+Strategy (`run_intraday_momo.py`, z≥3 long, hold 3h, 10bp taker RT, LONG-ONLY — shorts lose 0/9):
+- **No gate: +14.9bp/tr Sharpe 1.5 in DESIGN 2023-24, but OOS 2025-26 −5.4bp → FAILS (regime).**
+- **+ VOL-REGIME GATE (trade only when trailing-7d RV > trailing-90d median, causal): OOS FLIPS to
+  +8.7bp/tr, Sharpe 0.61, +17%, 6/9 coins positive** — the FIRST edge alive in the current regime.
+  But DESIGN drops to +3.5bp (Sharpe 0.22): the gate helps OOS, hurts design → design/OOS tension is
+  a yellow flag; sample shrinks (351/195 tr); breadth shaky (ADA −37, XRP −18). **Verdict: real,
+  promising LEAD — not yet validated.** It's regime-gated intraday momentum: active in volatile
+  markets, flat in calm ones. Modest (Sharpe ~0.6 OOS ≈ 10-15%/yr at 1x). NEXT: validate properly at
+  5m/15m (more trades/breadth — user's ask), walk-forward + MC, real maker/taker execution model.
+- **Unified finding across the whole campaign:** EVERY crypto edge is regime-dependent — carry needs
+  high funding, intraday momentum needs high vol — and mid-2026 is calm+low-funding, so all are
+  dormant or marginal. The vol-gated intraday momentum is the one currently-positive lead.
+
 ## Other ideas tested (go-wide breadth)
 - **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead
   regime.** Gating entry to "own funding ann ≥10%" leaves the book in-market only 4% of the time,
