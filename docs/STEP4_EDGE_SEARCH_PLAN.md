@@ -100,7 +100,44 @@ Honest caveats accepted up front: only ~4yr history, coins are highly cross-corr
 independent breadth), prior B.5 result was crypto-in-NY-window negative. Expectation: taker
 fails on fees; maker is the real test. Verdict goes to the run log + a memory note either way.
 
+## Pre-holiday effect — PRE-REGISTERED (2026-06-13, before the run)
+Go-wide brick #5, same family as the validated TOM (calendar flow, zero external data — holidays
+from `pandas-market-calendars`, forward-safe). Lakonishok-Smidt (1988): the session before a
+market holiday has abnormally high returns. Rule: hold the index ETF through the pre-holiday
+session (buy at prior close, sell at pre-holiday close); ~9 events/yr. Universe SPY/QQQ/DIA/IWM,
+2000-2024. PASS = post-cost mean return/event > 0 AND mean > the all-other-days mean AND
+t-stat > 2 AND MC bootstrap p5 ≥ 0 AND first-half (2000-2012) positive alone. Caveat: effect is
+documented to have weakened post-2000; a clean null is a fine, expected outcome.
+
+## VuManChu Cipher (VMC) on intraday crypto — PRE-REGISTERED (written 2026-06-13, before the run)
+Go-wide brick, user-requested: test whether the VMC Cipher B setup (WaveTrend + money flow),
+the way crypto traders actually use it, yields a post-cost edge. **Why it might survive where
+naked daily IBS failed (gross −0.012R):** Cipher B's `buy` is itself a mean-reversion signal
+(WT cross-up in the oversold zone), which on *daily* crypto fights the proven trend character.
+The canonical retail VMC long adds two things naked IBS lacked, both aligning it with "crypto
+trends": (1) a **200-EMA trend gate** (only buy dips inside an uptrend), and (2) it is traded
+**intraday (H4/H1)**, a regime we have never tested on crypto. So this is a genuinely different
+probe, not IBS relabelled.
+
+Frozen rule (`vmc_cipher`, long-only): ENTER long when Cipher B `buy` (WT1×WT2 cross with
+wt2 ≤ −53) AND close > EMA(trend_len) AND money_flow > 0 (green). EXIT on Cipher B `sell`
+(WT cross in overbought) OR a `max_hold_bars` time stop OR an `atr_stop`×ATR disaster stop.
+Decision timeframe H4 (primary); H1 as a secondary read only if H4 is interesting. Universe =
+same 8 coins (BTC ETH LTC BCH SOL AVAX LINK DOGE), 2021–2024 (**2025/26 stays sealed**). Run
+BOTH taker (0.10%/side) and maker/limit entry, as on every crypto run. Divergence/`gold_buy`
+deliberately excluded from v1 (pivot confirmation is a look-ahead trap; the `buy` flag is fully
+causal). PASS (same bar as crypto-IBS, for comparability) = pooled post-cost expectancy > 0
+AND ≥ 4/8 coins positive AND MC p5 ≥ 0. Honest caveats up front: same weak independent breadth
+(8 correlated coins), only ~4 yr, and intraday adds *more* round-trips → more cost drag, so
+maker entry is expected to be load-bearing. Verdict → run log + memory either way.
+
 ## Run log
+- **2026-06-13 · pre-holiday effect (SPY/QQQ/DIA/IWM, 2000-2024): FAIL — arbitraged away.**
+  Mean +1.9 bps/event NET, t=0.50 (insignificant), and BELOW the all-other-days baseline
+  (+3.2 bps) → no pre-holiday premium in modern data. Eras −11/+10/−9/+20 bps (only 2019-24
+  positive), MC P(≤0)=32%, first-half P=58%. The Lakonishok-Smidt (1928-86) effect is gone
+  post-2000 — a documented decay, cleanly reproduced. Calendar family: TOM remains the one
+  survivor; sub-monthly calendar anomalies (holiday, day-of-week) are too small / decayed.
 - **2026-06-13 · crypto IBS (BTC/ETH/+6, 2021-24): FAIL — and the failure is diagnostic.**
   Pooled **−0.086R** both taker and maker (321 tr), **gross −0.012R** (negative BEFORE costs),
   0/7 coins positive, all 4 years negative, MC P(≤0)=100%. Unlike equity-IBS (gross +0.038R,
