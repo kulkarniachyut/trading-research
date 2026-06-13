@@ -12,9 +12,12 @@ systematic premiums — and they are uncorrelated to each other (the basis of re
    PARKED, regime-compressed** (OOS +0.8%; monitor says STAND ASIDE). Redeploys when funding fattens.
 2. **VOLATILITY premium** (variance-risk premium — implied vol > realized vol). Diagnostic confirms
    it EXISTS: Deribit BTC DVOL mean 43.7% vs RV30 39.2% ⇒ **+4.5 vol pts IV-RV**, ~400d. Uncorrelated
-   to carry (different risk being sold). **State: confirmed-but-unbuilt** — needs Deribit options
-   infra + Black-Scholes/delta-hedge sim, and disciplined TAIL management (naked short-vol blows up
-   in spikes — the documented "concentrated tail risk"; dangerous for a prior-losses trader).
+   to carry. **RIGOR PASS (short-variance daily P&L, 700d): premium is real (77% win-days, standalone
+   Sharpe ~1.05) BUT TAIL-DOMINATED — the single worst day wipes ~278 days of premium.** ⇒ naked
+   short-vol is UNINVESTABLE (one spike = ruin; the user has prior losses). **State: real but must be
+   harvested via DEFINED-RISK structures only** (iron condors / credit spreads, capped max loss +
+   tail hedge) — caps the steamroller, shrinks the premium. Needs Deribit options-chain infra +
+   structure/Greeks sim. A careful build, NOT naked straddles.
 Everything DIRECTIONAL (momentum/reversion) is dead. **A real crypto book = CARRY + VOL, each
 regime/vol-gated, sized ≤2-3x, stacked when both are live.** That's the survivable-aggressive
 machine — not 10x, but a genuine two-engine system. Next build: the VOL sleeve (backlog #3).
