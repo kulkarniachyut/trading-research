@@ -67,9 +67,19 @@ Strategy (`run_intraday_momo.py`, z≥3 long, hold 3h, 10bp taker RT, LONG-ONLY 
   promising LEAD — not yet validated.** It's regime-gated intraday momentum: active in volatile
   markets, flat in calm ones. Modest (Sharpe ~0.6 OOS ≈ 10-15%/yr at 1x). NEXT: validate properly at
   5m/15m (more trades/breadth — user's ask), walk-forward + MC, real maker/taker execution model.
-- **Unified finding across the whole campaign:** EVERY crypto edge is regime-dependent — carry needs
-  high funding, intraday momentum needs high vol — and mid-2026 is calm+low-funding, so all are
-  dormant or marginal. The vol-gated intraday momentum is the one currently-positive lead.
+- **15m CROSS-CHECK FALSIFIES the 1h lead (the truth machine working).** Ran the same rule at 15m:
+  no-gate OOS −14.7bp (worse — more fee drag), and crucially the VOL-GATE at 15m is OOS **−15.4bp**
+  (does NOT rescue it), the OPPOSITE of the 1h vol-gate's +8.7bp. A real momentum-continuation effect
+  would appear CONSISTENTLY across adjacent timeframes (15m & 1h both +); flipping sign between
+  neighbors is the hallmark of a FLUKE/overfit, not an edge. **VERDICT: intraday momentum is NOT a
+  validated edge — the single positive cell (1h × vol-gate) was a lucky timeframe×gate combination,
+  falsified by the 15m cross-check.** Higher frequency (the user's 5m/15m hope) makes it WORSE, not
+  better — fee drag dominates. Intraday hunt closed: no robust edge.
+- **UNIFIED CAMPAIGN FINDING (final): there is NO robust, currently-alive systematic crypto edge for
+  a retail 2-3x account.** Carry (real but regime-dead now), vol (real but tail-unsafe/unhedgeable),
+  intraday momentum (timeframe-inconsistent fluke), everything directional (dead 4×). Crypto's real
+  edges are all REGIME-CONDITIONAL and mid-2026 is dead for them. The honest path is patience for the
+  carry/vol regime (monitor in hand), not forcing a fragile intraday signal.
 
 ## Other ideas tested (go-wide breadth)
 - **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead

@@ -37,28 +37,36 @@ def _get(url: str) -> list:
         return json.loads(r.read())
 
 
-def fetch_1h(symbol: str, refresh: bool = False) -> pd.Series:
+_STEP_MS = {"1h": 3600_000, "15m": 900_000, "5m": 300_000}
+
+
+def fetch_klines(symbol: str, interval: str = "1h", refresh: bool = False) -> pd.Series:
     CACHE.mkdir(parents=True, exist_ok=True)
-    fp = CACHE / f"{symbol}_1h.parquet"
+    fp = CACHE / f"{symbol}_{interval}.parquet"
     if fp.exists() and not refresh:
         s = pd.read_parquet(fp)["close"]; s.index = pd.to_datetime(s.index, utc=True); return s
+    step = _STEP_MS[interval]
     rows = []
     cur = int(START.timestamp() * 1000); end_ms = int(END.timestamp() * 1000)
     while cur < end_ms:
-        b = _get(f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h"
+        b = _get(f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}"
                  f"&startTime={cur}&endTime={end_ms}&limit=1000")
         if not b:
             break
         rows += [(x[0], float(x[4])) for x in b]
         if b[-1][0] <= cur:
             break
-        cur = b[-1][0] + 3600_000
+        cur = b[-1][0] + step
         time.sleep(0.12)
     idx = pd.to_datetime([r[0] for r in rows], unit="ms", utc=True)
     s = pd.Series([r[1] for r in rows], index=idx, name="close").sort_index()
     s = s[~s.index.duplicated()]
     s.to_frame().to_parquet(fp)
     return s
+
+
+def fetch_1h(symbol: str, refresh: bool = False) -> pd.Series:
+    return fetch_klines(symbol, "1h", refresh)
 
 
 def main() -> None:

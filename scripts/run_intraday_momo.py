@@ -22,7 +22,9 @@ import sys
 import numpy as np
 import pandas as pd
 
-from scripts.diag_crypto_intraday import BASKET, fetch_1h
+from scripts.diag_crypto_intraday import BASKET, fetch_klines
+
+_BPD = {"1h": 24, "15m": 96, "5m": 288}
 
 
 def _opt_f(flag, d):
@@ -30,16 +32,16 @@ def _opt_f(flag, d):
 
 
 def backtest(px: pd.Series, thr: float, hold: int, cost_bp: float, allow_short: bool,
-             vol_gate: bool = False):
+             vol_gate: bool = False, bpd: int = 24):
     r = np.log(px).diff()
-    vol = r.rolling(24).std()
+    vol = r.rolling(bpd).std()              # ~24h vol in bars
     z = (r / vol)
-    # vol-regime gate (causal): trade only when trailing 7d realized vol > its trailing 90d median
-    rv7 = r.rolling(168).std()
-    rv_med = rv7.rolling(24 * 90).median().shift(1)
+    # vol-regime gate (causal): trailing 7d realized vol > its trailing 90d median
+    rv7 = r.rolling(7 * bpd).std()
+    rv_med = rv7.rolling(90 * bpd).median().shift(1)
     regime_on = (rv7.shift(1) > rv_med)
     trades = []
-    i = 25
+    i = bpd + 1
     n = len(px)
     arr_z = z.values
     arr_p = px.values
@@ -82,20 +84,23 @@ def _summary(label, all_tr, cost_bp):
 
 
 def main():
-    thr = _opt_f("--thr", 3.0); hold = int(_opt_f("--hold", 3))
+    thr = _opt_f("--thr", 3.0); hold_h = _opt_f("--hold", 3.0)
     cost_bp = _opt_f("--cost-bp", 10.0); allow_short = "--short" in sys.argv
     vol_gate = "--vol-gate" in sys.argv
-    print(f"=== INTRADAY MOMENTUM  z>={thr} hold={hold}h  taker RT {cost_bp}bp  "
+    a = sys.argv[1:]; tf = a[a.index("--tf") + 1] if "--tf" in a else "1h"
+    bpd = _BPD[tf]
+    hold = max(1, round(hold_h * bpd / 24))   # hold hours -> bars at this TF
+    print(f"=== INTRADAY MOMENTUM  tf={tf}  z>={thr} hold={hold_h}h({hold}bars)  taker RT {cost_bp}bp  "
           f"{'long+short' if allow_short else 'long-only'}"
           f"{'  [VOL-REGIME GATE]' if vol_gate else ''} ===")
     by_period = {"DESIGN 2023-24": [], "OOS 2025-26": []}
     per_coin = {}
     for sym in BASKET:
         try:
-            px = fetch_1h(sym)
+            px = fetch_klines(sym, tf)
         except Exception as exc:  # noqa: BLE001
             print(f"  {sym}: {exc}"); continue
-        tr = backtest(px, thr, hold, cost_bp, allow_short, vol_gate)
+        tr = backtest(px, thr, hold, cost_bp, allow_short, vol_gate, bpd)
         per_coin[sym] = np.mean([t[1] for t in tr]) * 1e4 if tr else 0
         for ts, net in tr:
             (by_period["DESIGN 2023-24"] if ts.year <= 2024 else by_period["OOS 2025-26"]).append((ts, net))

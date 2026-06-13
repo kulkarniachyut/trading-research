@@ -39,13 +39,17 @@ def main() -> None:
     tf = sys.argv[sys.argv.index("--tf") + 1] if "--tf" in sys.argv else "4h"
     # Alpaca crypto fetches H1 (its coarsest sub-daily granularity); the clock resamples H1 -> the
     # decision TF (e.g. H4), so the decision bar is always built from real H1 data, no look-ahead.
-    base_tf = TimeFrame.H1
+    # Alpaca crypto fetches M5/M15/M30/H1 directly; H4 has no native fetch so resample from H1.
+    # The clock resamples base -> decision TF, so the decision bar is always built from real bars.
+    base_tf = TimeFrame.H1 if tf == "4h" else TimeFrame(tf)
     params = {"decision_tf": tf}
     if "--gold" in sys.argv:
         # Canonical gold_buy REVERSAL setup: buy + causal bullish divergence + RSI<30. This is a
         # reversal signal, so the trend-continuation gates (200-EMA, money-flow-green) are dropped
         # — they structurally contradict a deep-oversold entry (proven: gated gold_buy = 0 trades).
         params |= {"entry_signal": "gold_buy", "trend_len": 1, "require_money_flow": False}
+    if "--sr" in sys.argv:  # S/R confluence: only buy at a recent support level (user's "sr")
+        params["require_support"] = True
     if limit:
         params |= {"limit_entry": True, "limit_ttl_bars": 6}
 
