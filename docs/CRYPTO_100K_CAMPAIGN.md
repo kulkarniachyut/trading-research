@@ -4,6 +4,38 @@ _Branch `crypto-100k`. Kept separate from `STEP4_EDGE_SEARCH_PLAN.md` (equity tr
 edited). Same truth-machine discipline: pre-register criteria BEFORE looking, log negatives,
 theory-fixed params, honest costs._
 
+## GO-WIDE research synthesis (2026-06-13) — the crypto edge landscape
+Hard research pass across exchanges/tickers/strategies (X, quant blogs, BIS WP1087 "Crypto carry",
+2026 venue reports). Cross-referenced with our own backtests. The picture is consistent:
+
+| Edge | Mechanism | Documented | OUR finding / current regime |
+|---|---|---|---|
+| Perp funding carry | market-neutral, harvest funding | >10%, to 40% | IS +7.4%, **OOS 2025/26 +0.8% (compressed)** |
+| Dated-futures basis | market-neutral cash-and-carry | Sharpe ~4.84, to 50% | **3M basis 2.5% as of Mar-2026 (compressed)** — same regime |
+| Cross-venue funding spread | market-neutral, venue divergence | 3-12% majors / 20-60% long-tail | **majors ~3-5% gross, < net after sign-flip fees** (measured Binance v Bybit) |
+| Implied-realized vol | options, dynamic hedge | Sharpe ~2.4 | untested — needs Deribit/options infra (big lift) |
+| Directional (momentum/MR) | price prediction | weak | **DEAD** (4 momentum deaths; reversion sub-fee at every horizon) |
+
+**STRATEGIC VERDICT: crypto's only monetizable edges are market-neutral CARRIES, and mid-2026 is a
+LOW-CARRY REGIME** — perp funding ~0.6%, dated basis ~2.5%, cross-venue thin on majors. The fat
+versions (basis 40%, cross-venue 20-60%) need either a high-funding bull regime OR illiquid
+long-tail perps (liquidity/exchange/delist risk — where retail loses). Independent 2026 data
+corroborates our OOS decay. **The disciplined play: do NOT force carry now (low reward, the way
+accounts bleed). Build the carry/basis/cross-venue monitors + execution now; DEPLOY when the carry
+regime fattens (redeploy trigger = basket funding/basis back to elevated). Keep go-wide research as
+an ongoing program.** This is regime patience, not inaction — exactly the discipline a prior-losses
+trader needs.
+
+## Go-wide backlog (prioritized, evidence-ranked)
+1. **Carry regime monitor** — a daily script that tracks basket perp-funding + 3M basis level and
+   fires a "carry is fat again, deploy" signal. Converts "wait for regime" into an actionable trigger.
+2. **Dated-futures basis backtest** — Binance USDT quarterly futures cash-and-carry; the higher-
+   Sharpe sibling of perp carry, also currently compressed but the cleaner instrument when fat.
+3. **Vol-selling / implied-realized** — biggest untested edge; needs Deribit options data + infra.
+4. **Cross-venue on long-tail perps** — where the 20-60% lives; gated on liquidity/risk diligence.
+5. **Live build** — Binance carry executor (2-3x cross-margin, flatten-when-funding<0, swift exits)
+   — build the plumbing during the low regime so it's ready when carry fattens.
+
 ## The goal, stated honestly
 User goal: **$10K → $100K in 1 year = 10x / +900%.** This is pursued hard, but the math is fixed:
 - The project's *own* validated north star (handoff 2026-06-13) is that clearing even **25-30%/yr
