@@ -100,7 +100,34 @@ Honest caveats accepted up front: only ~4yr history, coins are highly cross-corr
 independent breadth), prior B.5 result was crypto-in-NY-window negative. Expectation: taker
 fails on fees; maker is the real test. Verdict goes to the run log + a memory note either way.
 
+## Cross-sectional momentum — PRE-REGISTERED (2026-06-13, before the run)
+Go-wide brick #4, and the highest-value diversifier: relative-strength momentum is *negatively*
+correlated to our mean-reversion edges (it buys winners; IBS/TOM buy weakness), so it lifts
+combined Sharpe more per edge than anything else. Classic 12-1 rule (Jegadeesh-Titman / Faber):
+each month-end rank a liquid ETF universe by trailing 12-month return skipping the most recent
+month; hold the top-K equal-weight; rebalance monthly; trade at next-session open (no look-ahead);
+apply the real equity cost model on turnover. Architecture note: this is a PORTFOLIO-level
+backtest (cross-symbol ranking), not the per-symbol event engine — costs still applied per trade.
+Universe: 9 sector SPDRs + SPY QQQ IWM EFA EEM GLD TLT (long history, 1999+). K=3, 1999-2024.
+PASS = post-cost monthly expectancy > 0 AND beats equal-weight buy&hold Sharpe AND MC (monthly
+bootstrap) p5 ≥ 0 AND pre-2013 (first half) positive on its own. Caveat: yfinance unadjusted
+(dividend drag — conservative for longs).
+
 ## Run log
+- **2026-06-13 · cross-sectional momentum (16 ETFs, 12-1 monthly, 1999-2024): FAIL both ways.**
+  Long-only top-3: +8.6%/yr Sharpe 0.52 — but EW buy&hold is +7.4%/yr Sharpe **0.51**, i.e. the
+  strategy is ~pure beta, not a distinct edge (and first-half MC P=10%). Long-short top/bottom-3
+  (the market-neutral factor): Sharpe **0.21**, MC P(≤0)=16%, −2.6%/yr in the 2007-12 momentum
+  crash → weak and crash-prone. Both fail the pre-registered bar (beat buy&hold Sharpe / MC p5≥0).
+- **2026-06-13 · META-FINDING (act on this): MOMENTUM NEEDS BREADTH WE DON'T HAVE.** Three
+  momentum strategies now dead on the same wall — futures TSMOM (9 mkts), crypto momentum
+  (8 coins), cross-sectional ETF momentum (16 names): all show *positive direction* but fail
+  MC robustness because the academic momentum Sharpe needs a *large* cross-section (100s of
+  names) we can't cheaply get. **Mean-reversion / calendar / event edges work on small liquid
+  universes (IBS, TOM validated); momentum does not.** → Stop testing momentum variants. Aim
+  remaining go-wide bricks at small-universe-friendly mechanisms: PEAD/earnings drift (per-stock
+  event), pairs/stat-arb, other calendar effects (FOMC drift, month/quarter seasonals),
+  VIX/term-structure. This narrows the search productively.
 - **2026-06-13 · crypto IBS (BTC/ETH/+6, 2021-24): FAIL — and the failure is diagnostic.**
   Pooled **−0.086R** both taker and maker (321 tr), **gross −0.012R** (negative BEFORE costs),
   0/7 coins positive, all 4 years negative, MC P(≤0)=100%. Unlike equity-IBS (gross +0.038R,
