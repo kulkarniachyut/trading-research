@@ -4,6 +4,21 @@ _Branch `crypto-100k`. Kept separate from `STEP4_EDGE_SEARCH_PLAN.md` (equity tr
 edited). Same truth-machine discipline: pre-register criteria BEFORE looking, log negatives,
 theory-fixed params, honest costs._
 
+## THE TWO-PREMIUM FRAMEWORK (the honest foundation of a crypto book, 2026-06-13)
+After mapping the whole landscape, crypto offers exactly TWO harvestable, retail-accessible
+systematic premiums — and they are uncorrelated to each other (the basis of real diversification):
+1. **CARRY premium** (cost of leverage to chronically-long retail) — expressed via perp funding,
+   dated basis, cross-venue spread (all corr ~0.66+, ONE premium). Validated: IS +7.4% net. **State:
+   PARKED, regime-compressed** (OOS +0.8%; monitor says STAND ASIDE). Redeploys when funding fattens.
+2. **VOLATILITY premium** (variance-risk premium — implied vol > realized vol). Diagnostic confirms
+   it EXISTS: Deribit BTC DVOL mean 43.7% vs RV30 39.2% ⇒ **+4.5 vol pts IV-RV**, ~400d. Uncorrelated
+   to carry (different risk being sold). **State: confirmed-but-unbuilt** — needs Deribit options
+   infra + Black-Scholes/delta-hedge sim, and disciplined TAIL management (naked short-vol blows up
+   in spikes — the documented "concentrated tail risk"; dangerous for a prior-losses trader).
+Everything DIRECTIONAL (momentum/reversion) is dead. **A real crypto book = CARRY + VOL, each
+regime/vol-gated, sized ≤2-3x, stacked when both are live.** That's the survivable-aggressive
+machine — not 10x, but a genuine two-engine system. Next build: the VOL sleeve (backlog #3).
+
 ## GO-WIDE research synthesis (2026-06-13) — the crypto edge landscape
 Hard research pass across exchanges/tickers/strategies (X, quant blogs, BIS WP1087 "Crypto carry",
 2026 venue reports). Cross-referenced with our own backtests. The picture is consistent:
