@@ -98,6 +98,20 @@ Tested the other intraday family with MAKER cost (2bp — dip-buys fill passivel
   Not currently deployable. What COULD change it: a genuinely novel signal (L2 order-flow, on-chain,
   ML features) = major effort, high overfit risk, no guarantee; OR a regime where these reactivate.
 
+## Multi-TF FVG (user idea: HTF gap → LTF entry) — LOOK-AHEAD CAUGHT, no causal edge
+ICT-style: detect 3-bar Fair Value Gap on HTF (1h/4h), enter on 15m retrace into the zone (maker
+limit at gap edge), stop at far edge, 1.5R target. `run_mtf_fvg.py`.
+- **First run looked SPECTACULAR: +0.89R exp, 78% win, 9/9 coins, held OOS +0.83R.** Too good →
+  hunted the bug. **Found it: pandas left-labels HTF bars, so a 4h FVG "formed" at 00:00 actually
+  uses data through 04:00; entries were allowed from 00:00 = up to 4h of LOOK-AHEAD.**
+- **CAUSAL FIX (entries only after the HTF bar closes): edge VANISHES → −0.03R design / −0.15R OOS
+  (4h), −0.20R OOS (1h), 0/9 coins, win rate 78%→37-42%.** MTF FVG has NEGATIVE causal edge — the
+  gap-fill bounce doesn't exist without future sight; price continues THROUGH gaps (crypto trends).
+- **METHODOLOGY WIN (the session's most important moment): a +0.89R/78%-win backtest was 100% a
+  look-ahead artifact.** This is exactly the result that gets traded live and blows up an account.
+  Lesson reinforced: distrust spectacular backtests, hunt the bug, verify causality. Truth machine
+  worked. Closes the FVG-MTF idea; same likely fate awaits naive VMC/IBS/ORB MTF (left-label trap).
+
 ## Other ideas tested (go-wide breadth)
 - **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead
   regime.** Gating entry to "own funding ann ≥10%" leaves the book in-market only 4% of the time,
