@@ -32,7 +32,8 @@ def _opt_f(flag, d):
 
 
 def backtest(px: pd.Series, thr: float, hold: int, cost_bp: float, allow_short: bool,
-             vol_gate: bool = False, bpd: int = 24):
+             vol_gate: bool = False, bpd: int = 24, revert: bool = False,
+             calm_gate: bool = False):
     r = np.log(px).diff()
     vol = r.rolling(bpd).std()              # ~24h vol in bars
     z = (r / vol)
@@ -51,13 +52,21 @@ def backtest(px: pd.Series, thr: float, hold: int, cost_bp: float, allow_short: 
         zz = arr_z[i]
         if np.isnan(zz):
             i += 1; continue
-        if vol_gate and not arr_gate[i]:
+        if vol_gate and not arr_gate[i]:        # high-vol regime only (momentum)
+            i += 1; continue
+        if calm_gate and arr_gate[i]:           # low-vol/ranging regime only (mean-reversion)
             i += 1; continue
         side = 0
-        if zz >= thr:
-            side = 1
-        elif allow_short and zz <= -thr:
-            side = -1
+        if revert:                      # fade: buy oversold dips (maker limit fills), short rips
+            if -3.0 < zz <= -thr:        # moderate dip only — extreme (z<-3) CONTINUES down (diag)
+                side = 1
+            elif allow_short and 3.0 > zz >= thr:
+                side = -1
+        else:                           # momentum: ride strong moves
+            if zz >= thr:
+                side = 1
+            elif allow_short and zz <= -thr:
+                side = -1
         if side == 0:
             i += 1; continue
         entry = arr_p[i + 1]            # next bar open ~ this close; causal
@@ -87,12 +96,15 @@ def main():
     thr = _opt_f("--thr", 3.0); hold_h = _opt_f("--hold", 3.0)
     cost_bp = _opt_f("--cost-bp", 10.0); allow_short = "--short" in sys.argv
     vol_gate = "--vol-gate" in sys.argv
+    calm_gate = "--calm-gate" in sys.argv
+    revert = "--revert" in sys.argv
     a = sys.argv[1:]; tf = a[a.index("--tf") + 1] if "--tf" in a else "1h"
     bpd = _BPD[tf]
     hold = max(1, round(hold_h * bpd / 24))   # hold hours -> bars at this TF
-    print(f"=== INTRADAY MOMENTUM  tf={tf}  z>={thr} hold={hold_h}h({hold}bars)  taker RT {cost_bp}bp  "
+    mode = "MEAN-REVERSION (maker dip-buy)" if revert else "MOMENTUM"
+    print(f"=== INTRADAY {mode}  tf={tf}  |z|>={thr} hold={hold_h}h({hold}bars)  RT {cost_bp}bp  "
           f"{'long+short' if allow_short else 'long-only'}"
-          f"{'  [VOL-REGIME GATE]' if vol_gate else ''} ===")
+          f"{'  [VOL-GATE]' if vol_gate else ''} ===")
     by_period = {"DESIGN 2023-24": [], "OOS 2025-26": []}
     per_coin = {}
     for sym in BASKET:
@@ -100,7 +112,7 @@ def main():
             px = fetch_klines(sym, tf)
         except Exception as exc:  # noqa: BLE001
             print(f"  {sym}: {exc}"); continue
-        tr = backtest(px, thr, hold, cost_bp, allow_short, vol_gate, bpd)
+        tr = backtest(px, thr, hold, cost_bp, allow_short, vol_gate, bpd, revert, calm_gate)
         per_coin[sym] = np.mean([t[1] for t in tr]) * 1e4 if tr else 0
         for ts, net in tr:
             (by_period["DESIGN 2023-24"] if ts.year <= 2024 else by_period["OOS 2025-26"]).append((ts, net))

@@ -81,6 +81,23 @@ Strategy (`run_intraday_momo.py`, z≥3 long, hold 3h, 10bp taker RT, LONG-ONLY 
   edges are all REGIME-CONDITIONAL and mid-2026 is dead for them. The honest path is patience for the
   carry/vol regime (monitor in hand), not forcing a fragile intraday signal.
 
+## Intraday MEAN-REVERSION (user push: many trades × tickers → must be findable)
+Tested the other intraday family with MAKER cost (2bp — dip-buys fill passively). Buy moderate dips
+(−3<z≤−1.5), hold 3h. Results: **real in-sample, dead OOS** (classic decayed/crowded edge):
+- 1h: DESIGN +4.9bp Sharpe 1.78, OOS **−3.3bp** ❌. 15m: DESIGN +5.6bp **Sharpe 3.05**, OOS −1.9bp ❌.
+- Timeframe-CONSISTENT in-sample (unlike momentum) → the effect is REAL, not a fluke — but it
+  DECAYED out-of-sample (intraday MR is the most-mined retail strategy; arbed away).
+- Calm-vol gate (MR likes ranging regimes — theory-motivated) does NOT rescue it: flattens 1h to
+  breakeven (+0.2bp), 15m still −3.7bp. No gate revives it.
+- **KEY LESSON (answers the "frequency → edge" thesis): frequency AMPLIFIES the in-sample number,
+  it does NOT create edge.** 8,400 trades/yr at Sharpe 3.0 in 2023-24 → LOSES in 2025-26. The huge
+  trade count is exactly why HF in-sample backtests look seductive then bleed live. Cost scales WITH
+  frequency, so HF raises the gross-edge bar.
+- **FINAL INTRADAY VERDICT: both families (momentum + reversion), both timeframes (1h/15m), maker
+  costs, regime gates — all fail OOS.** Simple intraday crypto edges existed (2023-24) and decayed.
+  Not currently deployable. What COULD change it: a genuinely novel signal (L2 order-flow, on-chain,
+  ML features) = major effort, high overfit risk, no guarantee; OR a regime where these reactivate.
+
 ## Other ideas tested (go-wide breadth)
 - **Selective per-coin carry (funding-level entry gate) on OOS 2025/26: does NOT rescue the dead
   regime.** Gating entry to "own funding ann ≥10%" leaves the book in-market only 4% of the time,
