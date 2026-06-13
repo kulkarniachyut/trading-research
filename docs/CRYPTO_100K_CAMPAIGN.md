@@ -56,19 +56,28 @@ realistic stretch ~30-60%/yr with eyes open on a real drawdown — NOT a fantasy
   RT. Causality fixed (regime decision uses funding through i-1; immaterial vs the look-ahead
   version, now clean per the no-look-ahead rule). Caveats restated: carry-only (basis noise &
   short-leg liquidation not modeled — would shave the Sharpe, not the sign); needs a perp venue.
-  **This is the campaign's CORE engine: ~15% APY at near-zero drawdown.** Because the drawdown is
-  tiny, it is the one sleeve that can take real leverage (2-3x notional → ~30-45% APY, capped by
-  basis/liquidation risk not direction) — the legitimate amplifier toward the aggressive target.
+  NOTE: this +14.9% was CARRY-ONLY (optimistic) — see the rigor pass below, which is the real number.
+- **2026-06-13 · funding-carry RIGOR PASS (`run_funding_carry_basis.py`, full delta-neutral incl
+  real spot+perp 8h prices): edge SURVIVES at HALF the headline → +7.4% net, the honest number.**
+  Adding the basis/price-leg P&L (funding + spot_ret − perp_ret − fees, real Binance klines) cuts
+  basket net **+14.9% → +7.4% APY**, Sharpe ~7, maxDD **−0.22%**. **9/9 coins still net-positive;
+  every year positive incl 2022 bear (+0.3%).** The ~half cut is CONSISTENT across all 9 coins →
+  not a bug, it's the no-arbitrage truth: funding-collected and basis-convergence partially offset,
+  and the **~7.4% residual is the real risk premium for providing leverage to chronically-long
+  retail.** The naive funding-sum double-counted. Liquidation view: delta-neutral ⇒ account risk is
+  the BASIS move, not the price move (long-spot offsets short-perp), so 2-3x is safe with CROSS
+  margin (the +177% single-bar "adverse move" is a thin early-listing kline artifact, moot for a
+  delta-neutral book). **CORE engine, corrected: ~7.4% unlevered / ~0% DD / Sharpe ~7.**
 
-## Realistic target math (with the validated core)
-- Carry core unlevered: ~15% APY, ~0% DD, Sharpe ~10.
-- Carry core at 3x (perp venue): ~40-45% APY, DD still modest (basis/liquidation-bounded).
-- + regime-gated directional sleeve (brick-1 keeper): convex upside in bull cycles
-  (a 2021-like year could add +50-100%), cash in bears.
-- **Honest stretch: a great (bull) year ~60-120%, a bear year ~flat-to-slightly-positive
-  (carry carries it). NOT 10x.** 10x needs the directional-leverage lottery, which is ruin-prone.
-  The deliverable is a *survivable aggressive crypto machine*, with the carry core as the thing
-  that makes leverage safe-ish — the opposite of betting the account on one moonshot.
+## Realistic target math (CORRECTED with the basis-aware number)
+- Carry core unlevered: **~7.4% APY, ~0% DD, Sharpe ~7** (was naively ~15%).
+- Carry core at user's 2-3x cap: **~15-22% APY**, DD still small (basis-bounded, not price).
+- + regime-gated directional sleeve (brick-1 keeper): convex upside in bull cycles, cash in bears.
+- **Honest stretch: a great (bull) year maybe ~30-50% (carry-levered + directional), a bear year
+  ~flat (carry carries it). NOT 10x, and even ~30%+ leans on the directional sleeve firing.**
+- IMPLICATION: at ~7% unlevered the carry core ALONE can't carry the goal — this makes the GO-WIDE
+  mandate (stack more uncorrelated crypto sleeves: intraday MR, basis term-structure, vol) the
+  real path, with carry as the safe, leverageable anchor rather than the whole answer.
 
 ## Data discipline
 - Binance/Bybit funding APIs reachable from here; funding history cached to `data/funding/*.parquet`
