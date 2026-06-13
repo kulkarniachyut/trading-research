@@ -1,13 +1,44 @@
 # Session handoff — Step 4 edge search → live paper operation
 
-_Last updated 2026-06-10 (the session that built Step 4 end-to-end). Read this first, then
-`docs/STEP4_EDGE_SEARCH_PLAN.md` (full audit trail) and CLAUDE.md build status._
+_Last updated 2026-06-13. Read this first, then `docs/STEP4_EDGE_SEARCH_PLAN.md` (full audit
+trail) and CLAUDE.md build status. Live-experiment record committed at
+`data/paper_journal.jsonl`._
 
 ## TL;DR — where we are
-**Two validated systems are LIVE in Alpaca paper trading as of 2026-06-10.** Six IBS limit
-orders were submitted (SPY/IWM/DIA/XLV/XLI/XLB) and rest for the 2026-06-10 session; the
-journal is `data/paper_journal.jsonl` (git-ignored, lives on the user's machine). The next
-session's first job is usually: **run the daily loop / review fills** (see Runbook).
+**Two validated systems are LIVE in Alpaca paper trading since 2026-06-10.** Week 1 complete:
+5/6 IBS entries filled, all 5 positions currently green (**+1.25% account, unrealized**), but
+**ZERO closed round-trips** — the pre-registered gates judge *realized* results at 60/120
+trades (~3 / ~6 months). The daily loop must be run each post-close (Runbook below).
+
+## ⚠️ THE STRATEGIC REALITY (decided with the user 2026-06-13 — read before doing more)
+The validated edge is **real but small in dollars**: ~4.8%/yr at 0.5% risk/trade (~6 trades/wk,
+59.8% win, +$15.58/trade expectancy, Sharpe ≈ 0.45, ~23% max drawdown). **The user's bar is
+25-30%/yr** (below that, an Indian FD at ~7% / their advisor's 15-18% wins).
+
+**Honest verdict on how to clear that bar — this is the project's north star now:**
+- You CANNOT get there by leverage on these 2 edges: return and drawdown scale lock-step
+  (2% risk → ~19%/yr but ~75% DD; 2.5% → wipeout). 10× return = 10× drawdown = blow-up.
+- The ONLY legitimate path is **raising the combined Sharpe by stacking UNCORRELATED edges**,
+  THEN moderate leverage. Sharpe ≈ 0.45·√(N edges). To hit ~25-28%/yr at a survivable ~35-45%
+  max drawdown needs roughly **8-14 genuinely uncorrelated validated edges** + leverage +
+  tolerating big drawdowns. This is a months-to-years build, not a setup tweak.
+- "One amazing setup does 25%" is a fantasy that must be resisted; the machine that produces
+  25-30% is a *portfolio of mediocre uncorrelated edges*, which is exactly what every serious
+  quant shop runs.
+- **Mandate going forward: GO WIDE.** Validate many uncorrelated edges with this same truth
+  machine; keep the survivors; combine + size by risk. Next bricks (each pre-registered, zero
+  spend on existing data): crypto mean-reversion (24/7, uncorrelated market — user explicitly
+  asked for BTC/ETH; mind ~10-25bps taker fees, use maker/limit), PEAD/earnings drift
+  (event-driven), cross-sectional momentum (negatively correlated to mean-reversion =
+  high diversification value in crashes), pairs/stat-arb, overnight-gap structure, FX/futures carry.
+
+## Trader's metrics (the scoreboard — improve THESE, in priority order)
+1. **Sharpe ratio** (~0.45) — return per unit risk; THE metric. Raise it via uncorrelated edges,
+   not a better entry. Each independent edge lifts combined Sharpe ~√N.
+2. **Expectancy** (+$15.58/trade = +0.031R) — avg profit/trade. Limit-fills already cut cost 10×.
+3. **Win rate × win/loss** (59.8% × 0.79) — decompose every change into "moved win-rate or win-size?"
+4. **Max drawdown & MAR** (return ÷ maxDD; ours ~0.2) — caps safe leverage.
+5. **Profit factor, % time in market** — capital efficiency.
 
 ## The two systems (parameters FROZEN — do not tune)
 1. **IBS-limit** (`ibs_rev`, `limit_entry=True`): buy-limit at signal close when daily
@@ -20,6 +51,15 @@ session's first job is usually: **run the daily loop / review fills** (see Runbo
    not independently significant). **Next window entry: 2026-06-25.**
 Combined (the actual portfolio): +9.4R/yr, monthly corr +0.14, clustered MC P(luck) 0.7%.
 Honest expectations: ≈ +4.7%/yr at 0.5% risk/trade, worst backtest month −17R, Sharpe ≈ 0.45.
+
+## Live paper state (as of 2026-06-13, week 1)
+- 5 open lots (all IBS): SPY 21@732.91, DIA 29@506.67, XLI 61@173.58, IWM 32@284.08, XLB 195@49.96.
+  Each has a GTC 3-ATR disaster stop resting. XLV expired unfilled twice (no chase — by design).
+- Unrealized ≈ +1.25% account (recovered from −0.53% on day 1 — textbook reversion path).
+- Realized round-trips: **0** (positions on day ~3-4 of the 5-session max hold; exits resolve
+  by IBS≥0.8 / day-5 / stop). Fill rate 71-83% (inside the 81-94% backtest band).
+- Known op wart: Alpaca paper REST POSTs intermittently drop overnight (maintenance window);
+  reads work. Morning/again retries clear it — the loop is idempotent so re-runs are safe.
 
 ## Runbook (daily, after the 16:00 ET close)
 ```bash
@@ -72,15 +112,24 @@ uv run python scripts/signals_ibs_etf.py --equity 15000   # human-readable signa
   is still unbuilt.
 - IBS and TOM can hold the same symbol; lots are system-tagged in the journal.
 
-## Backlog (queued, in priority order)
+## Backlog (queued, in priority order — the GO-WIDE mandate)
+_Goal: reach ~8-14 uncorrelated validated edges so combined Sharpe + leverage can target the
+user's 25-30%/yr bar (see Strategic Reality above). Each candidate: pre-register pass criteria
+BEFORE looking, run through the truth machine, keep survivors, log negatives._
 1. Daily paper ops + first fill review (extend `paper_review.py` with realized-R once fills exist).
-2. Mining (user mandate, zero spend): **PEAD / earnings drift** (added 2026-06-11 — event
-   family, swing horizon, decades documented, third orthogonal mechanism vs IBS/TOM; earnings
-   dates + reaction via yfinance; pre-register before reading), crypto momentum (Alpaca, mind
-   25bps taker / maker option), overnight structures on 1m archive. Gap-fade: CLOSED
-   2026-06-11 (structural cost pre-verdict, see plan doc).
-3. ICT Phase E walk-forward on burned years (comparison baseline; no holdout).
-4. Step 6 proper: shared-capital risk layer, portfolio heat, automated scheduling of the loop.
+2. **Crypto mean-reversion (NEXT BRICK — user explicitly requested BTC/ETH):** frozen-ish IBS on
+   BTC/ETH/etc via Alpaca crypto (24/7, free, already wired `AlpacaCryptoProvider`). MUST use a
+   realistic crypto cost model (~10-25bps taker — likely kills taker entry; test maker/limit).
+   24/7 also enables genuine *intraday* MR that equities can't (no PDT). Uncorrelated market =
+   high diversification value. Prior caution: B.5 found crypto-in-NY-window net-negative.
+3. **PEAD / earnings drift** — event-driven, swing horizon, decades documented, orthogonal
+   mechanism. Earnings dates + reaction via yfinance; pre-register.
+4. **Cross-sectional momentum** — *negatively* correlated to mean-reversion (best diversifier
+   in crashes). Daily, equities/ETFs.
+5. Pairs / stat-arb; overnight-gap structure; FX/futures carry — further uncorrelated bricks.
+6. ICT Phase E: DONE 2026-06-11 (FAIL, P=49% — falsified, holdout not spent). Gap-fade: CLOSED.
+7. Step 6 proper: shared-capital risk layer, portfolio heat, leverage sizing, automated
+   scheduling of the loop (the thing that turns N edges into one risk-sized portfolio).
 5. India: blocked on data/broker (user has neither yet).
 
 ## User context (do not re-ask)

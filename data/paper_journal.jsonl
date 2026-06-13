@@ -1,0 +1,26 @@
+{"ts": "2026-06-10T16:16:26.774824", "kind": "pending_entry", "system": "ibs", "symbol": "SPY", "qty": 21, "limit": 739.219970703125, "stop": 716.199457803027, "order_id": "a902f859-2166-4203-9740-f1eaca9bc0ba"}
+{"ts": "2026-06-10T16:16:27.057096", "kind": "pending_entry", "system": "ibs", "symbol": "IWM", "qty": 32, "limit": 284.1099853515625, "stop": 268.58341574308645, "order_id": "55a43e02-6c2a-4e10-8bab-2e536720debd"}
+{"ts": "2026-06-10T16:16:27.340799", "kind": "pending_entry", "system": "ibs", "symbol": "DIA", "qty": 29, "limit": 508.9100036621094, "stop": 491.7817566480709, "order_id": "b661eb99-f75e-4fc0-a9a1-a6990a16b5e3"}
+{"ts": "2026-06-10T16:16:27.631230", "kind": "pending_entry", "system": "ibs", "symbol": "XLV", "qty": 73, "limit": 152.64999389648438, "stop": 145.87486666603803, "order_id": "a7ee9564-95fd-444d-a1b1-178032f0740f"}
+{"ts": "2026-06-10T16:16:27.919567", "kind": "pending_entry", "system": "ibs", "symbol": "XLI", "qty": 61, "limit": 173.6300048828125, "stop": 165.55148788715962, "order_id": "f20eaae2-bf35-4615-9902-e3da84e6ff35"}
+{"ts": "2026-06-10T16:16:28.202088", "kind": "pending_entry", "system": "ibs", "symbol": "XLB", "qty": 195, "limit": 49.959999084472656, "stop": 47.40835783053689, "order_id": "5272342f-de56-4c27-86a6-5e0ba208a058"}
+{"ts": "2026-06-10T20:40:20.740712", "kind": "lot_open", "system": "ibs", "symbol": "SPY", "qty": 21, "entry_session": "2026-06-10", "stop": 716.199457803027, "fill_price": 732.909524, "limit": 739.219970703125}
+{"ts": "2026-06-10T20:40:21.035425", "kind": "stop_submitted", "symbol": "SPY", "order_id": "188cb07e-5b1c-4d7b-997d-41d2fa199007"}
+{"ts": "2026-06-10T20:40:21.597388", "kind": "pending_entry", "system": "ibs", "symbol": "IWM", "qty": 32, "limit": 284.1099853515625, "stop": 268.58341574308645, "order_id": "55a43e02-6c2a-4e10-8bab-2e536720debd"}
+{"ts": "2026-06-10T20:40:21.873813", "kind": "lot_open", "system": "ibs", "symbol": "DIA", "qty": 29, "entry_session": "2026-06-10", "stop": 491.7817566480709, "fill_price": 506.670345, "limit": 508.9100036621094}
+{"ts": "2026-06-10T20:40:22.159150", "kind": "stop_submitted", "symbol": "DIA", "order_id": "bd72a28d-442f-4d4f-b5ca-72a0b10e168b"}
+{"ts": "2026-06-10T20:40:22.444307", "kind": "pending_entry", "system": "ibs", "symbol": "XLV", "qty": 73, "limit": 152.64999389648438, "stop": 145.87486666603803, "order_id": "a7ee9564-95fd-444d-a1b1-178032f0740f"}
+{"ts": "2026-06-10T20:40:22.730552", "kind": "lot_open", "system": "ibs", "symbol": "XLI", "qty": 61, "entry_session": "2026-06-10", "stop": 165.55148788715962, "fill_price": 173.582459, "limit": 173.6300048828125}
+{"ts": "2026-06-10T20:40:23.012135", "kind": "stop_submitted", "symbol": "XLI", "order_id": "6517197b-1f12-4d6b-ac4d-2e12bc5afd0d"}
+{"ts": "2026-06-10T20:40:23.290368", "kind": "pending_entry", "system": "ibs", "symbol": "XLB", "qty": 195, "limit": 49.959999084472656, "stop": 47.40835783053689, "order_id": "5272342f-de56-4c27-86a6-5e0ba208a058"}
+{"ts": "2026-06-10T20:47:31.262819", "kind": "lot_open", "system": "ibs", "symbol": "IWM", "qty": 32, "entry_session": "2026-06-10", "stop": 268.58341574308645, "fill_price": 284.08, "limit": 284.1099853515625}
+{"ts": "2026-06-10T20:47:31.747293", "kind": "stop_submitted", "symbol": "IWM", "order_id": "2bcb8fe0-2f55-4a1e-bc14-8744f5113169"}
+{"ts": "2026-06-10T20:47:32.029136", "kind": "pending_entry", "system": "ibs", "symbol": "XLV", "qty": 73, "limit": 152.64999389648438, "stop": 145.87486666603803, "order_id": "a7ee9564-95fd-444d-a1b1-178032f0740f"}
+{"ts": "2026-06-10T20:47:32.291902", "kind": "pending_entry", "system": "ibs", "symbol": "XLB", "qty": 195, "limit": 49.959999084472656, "stop": 47.40835783053689, "order_id": "5272342f-de56-4c27-86a6-5e0ba208a058"}
+{"ts": "2026-06-11T08:58:45.324528", "kind": "pending_expired", "symbol": "XLV", "status": "expired"}
+{"ts": "2026-06-11T08:58:45.590952", "kind": "lot_open", "system": "ibs", "symbol": "XLB", "qty": 195, "entry_session": "2026-06-10", "stop": 47.40835783053689, "fill_price": 49.96, "limit": 49.959999084472656}
+{"ts": "2026-06-11T08:58:45.861089", "kind": "stop_submitted", "symbol": "XLB", "order_id": "e5235755-e9ce-4b4f-b058-55351fc74428"}
+{"ts": "2026-06-12T03:39:30.134193", "kind": "submit_error", "system": "ibs", "action": "limit_day", "symbol": "XLV", "qty": 74, "limit_price": 152.64999389648438, "stop_price": 145.87486689835825, "note": "entry ibs=0.12", "error": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"}
+{"ts": "2026-06-12T08:51:49.633513", "kind": "submit_error", "system": "ibs", "action": "limit_day", "symbol": "XLV", "qty": 74, "limit_price": 152.64999389648438, "stop_price": 145.87486689835825, "note": "entry ibs=0.12", "error": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"}
+{"ts": "2026-06-12T19:33:56.036027", "kind": "pending_entry", "system": "ibs", "symbol": "XLV", "qty": 74, "limit": 152.64999389648438, "stop": 145.87486689835825, "order_id": "68765fe6-b8fb-440e-8b4c-fa7737de2ebb"}
+{"ts": "2026-06-13T03:32:59.452847", "kind": "pending_expired", "symbol": "XLV", "status": "expired"}
