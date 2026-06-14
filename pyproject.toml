@@ -54,7 +54,7 @@ packages = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests", "options/tests"]
 markers = [
     "network: test hits a live network API (skipped by default; run with -m network)",
     "integration: end-to-end test across real components",
