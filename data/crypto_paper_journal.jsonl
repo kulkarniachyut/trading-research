@@ -1,0 +1,2 @@
+{"ts": "2026-06-13T13:11:14.006326+00:00", "regime": "STAND_ASIDE", "deployed": false, "basket_ann_funding": 0.0345, "basket_per8h": 3.1e-05, "equity": 10000.0, "leverage": 2.5, "notional": 0.0, "per_coin_notional": 0.0, "accrued_since_last": 0.0, "paper_equity": 10000.0, "positions": {}}
+{"ts": "2026-06-13T13:34:40.922103+00:00", "regime": "STAND_ASIDE", "deployed": false, "basket_ann_funding": 0.0329, "basket_per8h": 3e-05, "equity": 10000.0, "leverage": 2.5, "notional": 0.0, "per_coin_notional": 0.0, "accrued_since_last": 0.0, "paper_equity": 10000.0, "positions": {}}

@@ -16,6 +16,11 @@ data/cache/
 # canonical 1-minute. Committing it once means no workspace/clone ever re-burns free credits
 # (see data/archive/databento/README.md). The negation must come after the *.parquet rule.
 !data/archive/databento/**/*.parquet
+# DO commit the durable Binance crypto archive (funding rates + spot/perp 8h + intraday OHLC),
+# pulled once from free public APIs and reused offline by the crypto-$100K campaign
+# (see docs/experiments/crypto_100k/README.md). Negations must come after the *.parquet rule.
+!data/funding/**/*.parquet
+!data/intraday/**/*.parquet
 
 # Secrets — never commit API keys
 .env
