@@ -1,0 +1,25 @@
+######## LONG-only (baseline) ########
+=== VMC-CRYPTO [LIMIT@close (maker)|LONG|SPOT] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  POOLED: 127 tr  win 54.3%  net +11,588  exp +0.182R (gross +0.215R, cost 0.032R/tr)
+  breadth+: 11/16
+  MC: total +23.2R  p5 +5.3R  P(<=0) 1.5%  -> SURVIVES
+
+######## LONG+SHORT (perps) ########
+=== VMC-CRYPTO [LIMIT@close (maker)|L+S|SPOT] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  POOLED: 247 tr  win 51.4%  net +12,930  exp +0.105R (gross +0.140R, cost 0.035R/tr)
+  breadth+: 11/17
+  MC: total +25.9R  p5 -3.0R  P(<=0) 7.6%  -> FAILS
+
+######## SHORT-only ########
+=== VMC-CRYPTO [LIMIT@close (maker)|SHORT|SPOT] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  POOLED: 120 tr  win 48.3%  net +1,097  exp +0.018R (gross +0.057R, cost 0.039R/tr)
+  breadth+: 7/17
+  MC: total +2.2R  p5 -19.0R  P(<=0) 43.5%  -> FAILS
+
+######## LONG+SHORT +perp funding ########
+=== VMC-CRYPTO [LIMIT@close (maker)|L+S|PERP] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  POOLED: 247 tr  win 51.4%  net +12,930  exp +0.105R (gross +0.140R, cost 0.035R/tr)
+  breadth+: 11/17
+  MC: total +25.9R  p5 -3.0R  P(<=0) 7.6%  -> FAILS
+
+ALL DONE

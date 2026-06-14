@@ -1,0 +1,55 @@
+# Headline validation — VMC+S/R, H4, wide 17-coin universe, 2021-2024
+# Regenerated post-refactor 2026-06-14T07:35Z — confirms reproducibility.
+
+## MAKER (realistic — strategy rests limit orders at support)
+=== VMC-CRYPTO [LIMIT@close (maker)|LONG|SPOT] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  2021:   19 tr  win 57.9%  net     +3,075  exp +0.324R
+  2022:   12 tr  win 50.0%  net        -73  exp -0.012R
+  2023:   41 tr  win 48.8%  net     +1,748  exp +0.085R
+  2024:   55 tr  win 58.2%  net     +6,838  exp +0.249R
+  POOLED: 127 tr  win 54.3%  net +11,588  exp +0.182R (gross +0.215R, cost 0.032R/tr)
+  breadth+: 11/16
+    SUSHIUSD   11 tr  win 45.5%  net     +2,835  exp +0.516R
+    LTCUSD     10 tr  win 50.0%  net     +2,112  exp +0.422R
+    DOTUSD      5 tr  win 80.0%  net     +1,640  exp +0.656R
+    DOGEUSD    15 tr  win 73.3%  net     +1,381  exp +0.184R
+    GRTUSD      5 tr  win 60.0%  net     +1,337  exp +0.535R
+    UNIUSD      7 tr  win 71.4%  net     +1,138  exp +0.325R
+    AVAXUSD    11 tr  win 54.5%  net     +1,071  exp +0.195R
+    AAVEUSD     6 tr  win 50.0%  net       +846  exp +0.282R
+    ETHUSD     19 tr  win 57.9%  net       +546  exp +0.058R
+    CRVUSD      1 tr  win 100.0%  net       +540  exp +1.079R
+    XRPUSD      4 tr  win 75.0%  net       +492  exp +0.246R
+    SOLUSD      9 tr  win 33.3%  net        -39  exp -0.009R
+    BCHUSD      6 tr  win 33.3%  net       -144  exp -0.048R
+    YFIUSD      3 tr  win 33.3%  net       -269  exp -0.180R
+    XTZUSD      3 tr  win 33.3%  net       -288  exp -0.192R
+    LINKUSD    12 tr  win 41.7%  net     -1,610  exp -0.268R
+  MC: total +23.2R  p5 +5.3R  P(<=0) 1.5%  -> SURVIVES
+
+## TAKER (worst-case cost stress)
+=== VMC-CRYPTO [market@open (taker)|LONG|SPOT] tf=4h  2021-2024  17/17 coins (R=$500) ===
+  2021:   20 tr  win 50.0%  net     +2,317  exp +0.232R
+  2022:   12 tr  win 41.7%  net       -261  exp -0.044R
+  2023:   45 tr  win 42.2%  net        -95  exp -0.004R
+  2024:   55 tr  win 54.5%  net     +6,053  exp +0.220R
+  POOLED: 132 tr  win 48.5%  net +8,013  exp +0.121R (gross +0.176R, cost 0.055R/tr)
+  breadth+: 11/16
+    SUSHIUSD   11 tr  win 45.5%  net     +2,650  exp +0.482R
+    LTCUSD     10 tr  win 40.0%  net     +1,977  exp +0.395R
+    DOTUSD      5 tr  win 80.0%  net     +1,583  exp +0.633R
+    GRTUSD      5 tr  win 60.0%  net     +1,285  exp +0.514R
+    UNIUSD      7 tr  win 71.4%  net     +1,051  exp +0.300R
+    AVAXUSD    12 tr  win 50.0%  net       +904  exp +0.151R
+    CRVUSD      1 tr  win 100.0%  net       +516  exp +1.032R
+    XRPUSD      4 tr  win 75.0%  net       +346  exp +0.173R
+    ETHUSD     19 tr  win 57.9%  net       +285  exp +0.030R
+    AAVEUSD     7 tr  win 42.9%  net       +262  exp +0.075R
+    DOGEUSD    17 tr  win 52.9%  net       +131  exp +0.015R
+    SOLUSD      9 tr  win 33.3%  net       -149  exp -0.033R
+    XTZUSD      3 tr  win 33.3%  net       -315  exp -0.210R
+    YFIUSD      3 tr  win 33.3%  net       -316  exp -0.211R
+    BCHUSD      7 tr  win 28.6%  net       -401  exp -0.115R
+    LINKUSD    12 tr  win 25.0%  net     -1,796  exp -0.299R
+  MC: total +16.0R  p5 -2.7R  P(<=0) 8.6%  -> FAILS
+ALL DONE
