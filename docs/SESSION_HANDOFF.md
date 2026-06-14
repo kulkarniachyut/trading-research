@@ -138,3 +138,11 @@ BEFORE looking, run through the truth machine, keep survivors, log negatives._
 - Decisions on record: pivot from ICT (E later), no credit spend, no holdout spend,
   paper-trade + keep mining existing data.
 - Memory files: `step4-edge-search-status`, `ibs-etf-limit-best-candidate` (auto-loaded).
+
+## 2026-06-13/14 · go-wide sweep + portfolio construction (consolidated into one PR)
+Scripts shipped: `run_xsec_momentum.py`, `run_preholiday.py`, `run_pairs.py` (all FAIL — momentum
+breadth / calendar+pairs decayed), `run_portfolio_frontier.py` (2-edge ceiling ~13% = Sharpe²/2),
+`run_vix_carry.py` (Sharpe 0.77, crash risk), `run_trend_sleeve.py` (crisis hedge → 3-sleeve
+Sharpe 0.81, ~20-24% target), `src/execution/allocator.py` (Step-6 risk layer, 7 tests).
+**The honest ceiling map:** VALIDATED ~13% (safe, mean-rev core) or DESIGNED ~20% (crash risk);
+25-30% needs institutional breadth. Only IBS+TOM live-validated. Replaces fragmented PRs #14-20.
