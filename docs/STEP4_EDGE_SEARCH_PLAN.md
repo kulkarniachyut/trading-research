@@ -274,3 +274,32 @@ fails on fees; maker is the real test. Verdict goes to the run log + a memory no
     crypto momentum (Alpaca 24/7), and combining anti-correlated weak edges (IBS×TSMOM — but
     any combined read on 2023/24 is now contaminated; a combo would go straight to the
     2025/26 holdout as its only clean test, which is a one-shot we should not spend lightly).
+
+## 2026-06-13/14 · Equity go-wide sweep + portfolio construction (consolidated)
+_Eight mechanisms tested this campaign (scripts shipped); the conclusion is robust & stable._
+- **Cross-sectional momentum** (`run_xsec_momentum.py`, 16 ETFs, 12-1, 1999-2024): FAIL both ways.
+  Long-only +8.6%/yr but Sharpe 0.52 ≈ EW buy&hold 0.51 (pure beta); long-short Sharpe 0.21,
+  MC P 16%, −2.6%/yr in the 2007-12 momentum crash.
+- **META: momentum needs breadth we don't have** — 3rd momentum death (after futures TSMOM,
+  crypto momentum): all positive *direction*, all fail MC robustness (need 100s of names).
+  Mean-reversion / calendar / carry work on small universes; momentum does not.
+- **Pre-holiday effect** (`run_preholiday.py`, SPY/QQQ/DIA/IWM, 2000-2024): FAIL — arbitraged
+  away post-2000 (+1.9 bps/event, t=0.50, below baseline). Lakonishok-Smidt decay reproduced.
+- **Pairs / stat-arb** (`run_pairs.py`, 7 ETF pairs, 2010-2024): FAIL — pooled −1.0%/yr,
+  Sharpe −0.44, 5/7 negative, MC P 95%. Post-2010 pairs decay; only IEF/TLT flickers.
+- **2-edge risk/return frontier** (`run_portfolio_frontier.py`): IBS+TOM CAGR PEAKS at ~13.4%
+  (2.5% risk) then DECLINES from vol drag → **~13% is the hard ceiling at any leverage**, and
+  it equals Sharpe²/2 (0.52²/2 = 13.5%) — a mathematical law, not a backtest quirk.
+- **VIX short-vol carry** (`run_vix_carry.py`, contango-filtered, 2011-2024): the first
+  ceiling-lifter — Sharpe 0.77, +31.5% standalone — BUT maxDD 64%, −35% single days → standalone
+  FAIL; valuable only as a risk-sized SLEEVE (lifts combined Sharpe 0.52→0.77). Carries crash
+  risk (XIV mechanism); corr to mean-rev +0.46 (they co-crash).
+- **Trend sleeve** (`run_trend_sleeve.py`, 12-1 TSMOM diversified ETF basket): weak standalone
+  (Sharpe 0.07) but the CRISIS HEDGE — corr −0.05/−0.15 to MR/VIX, green every crash month.
+  3-sleeve book (MR + 30% VIX + 60% trend): **Sharpe 0.81, ~16.6% CAGR @ base, ~20-24% w/ leverage**.
+- **Step 6 risk layer** (`src/execution/allocator.py`, 7 tests): sleeve allocator — risk-share
+  weights, gross-leverage cap, drawdown circuit breaker. Turns the 3 sleeves into one sized book.
+- **CONCLUSION (complete honest map):** retail on $10-20K can have a VALIDATED ~13% (safe,
+  mean-reversion core, live paper) or a DESIGNED ~20% (3-sleeve, crash risk); true 25-30%
+  needs institutional breadth/infrastructure. Ceiling = Sharpe²/2, so more uncorrelated edges
+  is the only lever. Only IBS+TOM are live-validated; VIX+trend are backtested only.
