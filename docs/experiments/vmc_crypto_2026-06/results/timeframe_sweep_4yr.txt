@@ -1,0 +1,55 @@
+######## TF=1h  2021-2024 ########
+=== VMC-CRYPTO [LIMIT@close (maker)] tf=1h  2021-2024  8/8 coins (R=$500) ===
+  2021:   99 tr  win 58.6%  net     +6,278  exp +0.127R
+  2022:   75 tr  win 48.0%  net     -1,322  exp -0.035R
+  2023:   83 tr  win 50.6%  net     -2,213  exp -0.053R
+  2024:   69 tr  win 58.0%  net     +3,517  exp +0.102R
+  POOLED: 326 tr  win 54.0%  net +6,259  exp +0.038R (gross +0.113R, cost 0.074R/tr)
+  breadth+: 4/8
+    SOLUSD     34 tr  win 73.5%  net     +6,821  exp +0.401R
+    BCHUSD     39 tr  win 71.8%  net     +5,288  exp +0.271R
+    ETHUSD     62 tr  win 54.8%  net     +1,870  exp +0.060R
+    BTCUSD      6 tr  win 66.7%  net       +686  exp +0.229R
+    LTCUSD     51 tr  win 49.0%  net       -405  exp -0.016R
+    AVAXUSD    37 tr  win 48.6%  net     -1,711  exp -0.092R
+    LINKUSD    47 tr  win 38.3%  net     -2,905  exp -0.124R
+    DOGEUSD    50 tr  win 48.0%  net     -3,385  exp -0.135R
+  MC: total +12.5R  p5 -16.7R  P(<=0) 23.8%  -> FAILS
+
+######## TF=30m  2021-2024 ########
+=== VMC-CRYPTO [LIMIT@close (maker)] tf=30m  2021-2024  8/8 coins (R=$500) ===
+  2021:  178 tr  win 45.5%  net     -1,132  exp -0.013R
+  2022:  124 tr  win 45.2%  net       -327  exp -0.005R
+  2023:  172 tr  win 49.4%  net       -444  exp -0.005R
+  2024:  149 tr  win 39.6%  net    -17,432  exp -0.234R
+  POOLED: 623 tr  win 45.1%  net -19,336  exp -0.062R (gross +0.031R, cost 0.093R/tr)
+  breadth+: 2/8
+    BTCUSD     36 tr  win 47.2%  net     +1,493  exp +0.083R
+    SOLUSD     76 tr  win 47.4%  net       +642  exp +0.017R
+    AVAXUSD    60 tr  win 40.0%  net       -796  exp -0.027R
+    BCHUSD     70 tr  win 44.3%  net     -3,000  exp -0.086R
+    LINKUSD    82 tr  win 48.8%  net     -3,252  exp -0.079R
+    LTCUSD     77 tr  win 45.5%  net     -3,414  exp -0.089R
+    ETHUSD    118 tr  win 45.8%  net     -3,860  exp -0.065R
+    DOGEUSD   104 tr  win 42.3%  net     -7,148  exp -0.137R
+  MC: total -38.7R  p5 -78.6R  P(<=0) 93.8%  -> FAILS
+
+######## TF=15m  2021-2024 ########
+=== VMC-CRYPTO [LIMIT@close (maker)] tf=15m  2021-2024  8/8 coins (R=$500) ===
+  2021:  315 tr  win 43.2%  net    -11,613  exp -0.074R
+  2022:  255 tr  win 45.1%  net    -17,751  exp -0.139R
+  2023:  316 tr  win 43.7%  net    -19,546  exp -0.124R
+  2024:  279 tr  win 42.3%  net    -21,111  exp -0.151R
+  POOLED: 1165 tr  win 43.5%  net -70,021  exp -0.120R (gross +0.016R, cost 0.136R/tr)
+  breadth+: 0/8
+    LINKUSD   156 tr  win 43.6%  net     -4,841  exp -0.062R
+    BCHUSD    126 tr  win 42.1%  net     -5,926  exp -0.094R
+    BTCUSD     96 tr  win 40.6%  net     -7,432  exp -0.155R
+    LTCUSD    165 tr  win 47.9%  net     -7,654  exp -0.093R
+    AVAXUSD   126 tr  win 46.8%  net     -8,056  exp -0.128R
+    ETHUSD    192 tr  win 46.4%  net     -8,660  exp -0.090R
+    SOLUSD    138 tr  win 36.2%  net    -13,296  exp -0.193R
+    DOGEUSD   166 tr  win 42.2%  net    -14,157  exp -0.171R
+  MC: total -140.0R  p5 -192.2R  P(<=0) 100.0%  -> FAILS
+
+######## TF=5m  2021-2024 ########

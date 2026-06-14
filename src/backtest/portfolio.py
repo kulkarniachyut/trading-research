@@ -33,7 +33,8 @@ class UniverseItem:
 
 
 def _engine_for(item: UniverseItem, initial_equity: float, risk_pct: float,
-                max_leverage: float, passive_maker: bool = False) -> BacktestEngine:
+                max_leverage: float, passive_maker: bool = False,
+                perp_funding_8h: float | None = None) -> BacktestEngine:
     maker = None
     if item.asset_class is AssetClass.FUTURE:
         market = Market("US", AssetClass.FUTURE, Product.FUTURES)
@@ -43,6 +44,14 @@ def _engine_for(item: UniverseItem, initial_equity: float, risk_pct: float,
     elif item.asset_class is AssetClass.CRYPTO:
         market = Market("US", AssetClass.CRYPTO, Product.INTRADAY)
         model = cost_model("US", "crypto")
+        if passive_maker:  # resting limit: no spread crossing/slippage, realistic ~0.04% maker fee
+            maker = cost_model("US", "crypto", taker_pct=0.0004,
+                               half_spread_bps=0.0, slippage_atr_mult=0.0)
+        if perp_funding_8h is not None:  # PERP: time-prorated funding drag on both fill models
+            from src.backtest.costs.components import FundingRate
+            model.components.append(FundingRate(perp_funding_8h))
+            if maker is not None:
+                maker.components.append(FundingRate(perp_funding_8h))
     else:
         market = Market("US", AssetClass.EQUITY, Product.INTRADAY)
         model = cost_model("US", "equity")
@@ -132,6 +141,7 @@ def run_portfolio(
     risk_pct: float = 0.005,
     max_leverage: float = 4.0,
     passive_maker: bool = False,
+    perp_funding_8h: float | None = None,
 ) -> PortfolioResult:
     """Run ``make_strategy()`` on every symbol in ``universe`` over ``[start, end]`` and aggregate.
 
@@ -155,7 +165,8 @@ def run_portfolio(
                 continue
             ref_sym = references.get(item.symbol)
             ref_bars = src.get_bars(ref_sym, base_tf, start, end) if ref_sym else None
-            eng = _engine_for(item, initial_equity, risk_pct, max_leverage, passive_maker)
+            eng = _engine_for(item, initial_equity, risk_pct, max_leverage, passive_maker,
+                              perp_funding_8h=perp_funding_8h)
             results[item.symbol] = eng.run(make_strategy(), bars, base_tf, reference_bars=ref_bars,
                                            regime_series=regime_series, news_calendar=news_calendar)
         except Exception as exc:  # noqa: BLE001 — one bad symbol must not kill the sweep
