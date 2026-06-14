@@ -25,12 +25,19 @@ from src.strategies.vumanchu.cipher_strategy import VmcCipher
 from src.validation import monte_carlo
 
 COINS = ["BTCUSD", "ETHUSD", "LTCUSD", "BCHUSD", "SOLUSD", "AVAXUSD", "LINKUSD", "DOGEUSD"]
+# --wide: every cached coin with usable 2021+ history (free breadth — attacks the MC wall).
+# Excludes coins that launched mid-window (ARB/PEPE/WIF/HYPE/ONDO/TRUMP/SKY/RENDER/LDO/SHIB/BONK)
+# so the 2021-24 backtest isn't dominated by partial-history names.
+WIDE_COINS = ["BTCUSD", "ETHUSD", "LTCUSD", "BCHUSD", "SOLUSD", "AVAXUSD", "LINKUSD", "DOGEUSD",
+              "DOTUSD", "XRPUSD", "UNIUSD", "AAVEUSD", "XTZUSD", "GRTUSD", "SUSHIUSD", "YFIUSD",
+              "CRVUSD"]  # 17 coins with full 2021+ history cached (ADA/FIL/POL/BAT excluded: no bars)
 EQUITY = 100_000.0
 RISK = 0.005
 ERAS = [(2021, 2021), (2022, 2022), (2023, 2023), (2024, 2024)]
 
 
 def main() -> None:
+    coins = WIDE_COINS if "--wide" in sys.argv else COINS
     args = [a for a in sys.argv[1:] if a.isdigit() and len(a) == 4]
     y0, y1 = (int(args[0]), int(args[1])) if len(args) >= 2 else (2021, 2024)
     if y1 >= 2025:
@@ -39,9 +46,9 @@ def main() -> None:
     tf = sys.argv[sys.argv.index("--tf") + 1] if "--tf" in sys.argv else "4h"
     # Alpaca crypto fetches H1 (its coarsest sub-daily granularity); the clock resamples H1 -> the
     # decision TF (e.g. H4), so the decision bar is always built from real H1 data, no look-ahead.
-    # Alpaca crypto fetches M5/M15/M30/H1 directly; H4 has no native fetch so resample from H1.
-    # The clock resamples base -> decision TF, so the decision bar is always built from real bars.
-    base_tf = TimeFrame.H1 if tf == "4h" else TimeFrame(tf)
+    # Alpaca crypto fetches only M1/M5/M15/H1 (not M30!). Non-native TFs resample from the finest
+    # fetchable base: 2m<-M1, 30m<-M15, 4h<-H1. The clock builds the decision bar from real bars.
+    base_tf = {"2m": TimeFrame.M1, "30m": TimeFrame.M15, "4h": TimeFrame.H1}.get(tf, TimeFrame(tf))
     params = {"decision_tf": tf}
     if "--gold" in sys.argv:
         # Canonical gold_buy REVERSAL setup: buy + causal bullish divergence + RSI<30. This is a
@@ -50,23 +57,36 @@ def main() -> None:
         params |= {"entry_signal": "gold_buy", "trend_len": 1, "require_money_flow": False}
     if "--sr" in sys.argv:  # S/R confluence: only buy at a recent support level (user's "sr")
         params["require_support"] = True
+    if "--sr-dist" in sys.argv:  # ablation: S/R proximity threshold in ATRs (default 1.0)
+        params["sr_atr_dist"] = float(sys.argv[sys.argv.index("--sr-dist") + 1])
+    if "--short" in sys.argv:  # short-only (mirror: sell at resistance below the 200-EMA)
+        params |= {"allow_long": False, "allow_short": True}
+    if "--both" in sys.argv:  # long AND short — what perps unlock
+        params |= {"allow_long": True, "allow_short": True}
+    # --perp: model perpetual funding as a time-prorated drag (~0.01%/8h ≈ 11% APY, conservative —
+    # applied to both legs even though shorts often RECEIVE funding in bull regimes).
+    perp_funding = 0.0001 if "--perp" in sys.argv else None
     if limit:
         params |= {"limit_entry": True, "limit_ttl_bars": 6}
 
     prov = AlpacaCryptoProvider()
-    uni = [UniverseItem(c, AssetClass.CRYPTO) for c in COINS]
+    uni = [UniverseItem(c, AssetClass.CRYPTO) for c in coins]
     res = run_portfolio(
         lambda: VmcCipher(params), uni,
         pd.Timestamp(f"{y0}-01-01", tz="America/New_York"),
         pd.Timestamp(f"{y1}-12-31", tz="America/New_York"),
         provider=prov, crypto_provider=prov, base_tf=base_tf,
         initial_equity=EQUITY, risk_pct=RISK, max_leverage=2.0, passive_maker=limit,
+        perp_funding_8h=perp_funding,
     )
     risk = RISK * EQUITY
     trades = [t for r in res.results.values() for t in r.trades]
     entry = "LIMIT@close (maker)" if limit else "market@open (taker)"
-    print(f"=== VMC-CRYPTO [{entry}] tf={tf}  {y0}-{y1}  {len(res.results)}/{len(COINS)} coins "
-          f"(R=${risk:,.0f}) ===")
+    direction = "L+S" if params.get("allow_short") and params.get("allow_long") else \
+        ("SHORT" if params.get("allow_short") else "LONG")
+    venue = "PERP" if perp_funding is not None else "SPOT"
+    print(f"=== VMC-CRYPTO [{entry}|{direction}|{venue}] tf={tf}  {y0}-{y1}  "
+          f"{len(res.results)}/{len(coins)} coins (R=${risk:,.0f}) ===")
     if res.errors:
         print(f"  errors: {res.errors}")
     if not trades:

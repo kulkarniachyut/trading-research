@@ -1,0 +1,21 @@
+######## sr_atr_dist=0.5 ########
+  POOLED: 83 tr  win 51.8%  net +6,611  exp +0.159R (gross +0.191R, cost 0.032R/tr)
+  breadth+: 8/15
+  MC: total +13.2R  p5 -1.3R  P(<=0) 7.0%  -> FAILS
+
+######## sr_atr_dist=1.0 ########
+  POOLED: 127 tr  win 54.3%  net +11,588  exp +0.182R (gross +0.215R, cost 0.032R/tr)
+  breadth+: 11/16
+  MC: total +23.2R  p5 +5.3R  P(<=0) 1.5%  -> SURVIVES
+
+######## sr_atr_dist=1.5 ########
+  POOLED: 153 tr  win 54.9%  net +10,742  exp +0.140R (gross +0.172R, cost 0.032R/tr)
+  breadth+: 11/16
+  MC: total +21.5R  p5 +1.9R  P(<=0) 3.3%  -> SURVIVES
+
+######## sr_atr_dist=2.0 ########
+  POOLED: 168 tr  win 54.8%  net +9,963  exp +0.119R (gross +0.150R, cost 0.031R/tr)
+  breadth+: 10/16
+  MC: total +19.9R  p5 -0.4R  P(<=0) 5.4%  -> FAILS
+
+ALL DONE

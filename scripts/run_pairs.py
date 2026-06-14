@@ -104,7 +104,7 @@ def main() -> None:
     book = pd.concat(all_days, axis=1).fillna(0).mean(axis=1)  # equal-weight across pairs, daily
     book = book[(book.index.year >= y0) & (book.index.year <= y1)]
     print("  ---")
-    sh = _stats("POOLED book", book)
+    _stats("POOLED book", book)
     spy = closes(prov, "SPY", y0, y1).pct_change().reindex(book.index).fillna(0)
     print(f"  market-neutrality: corr(book, SPY) = {np.corrcoef(book, spy)[0, 1]:+.2f}")
     mc = monte_carlo(list(book), n_resamples=2000, seed=42)
